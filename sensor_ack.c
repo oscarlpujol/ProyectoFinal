@@ -53,7 +53,7 @@ static void
 begin (fsm_t* this)
 {
     /*
- 	El sensor esta listo para enviar ACKs
+ 	Empieza el timer
     */
 }
 
@@ -62,6 +62,7 @@ send_ACK (fsm_t* this)
 {
     /*
 	Envia ACK
+	Reinicia el timer
     */
 }
 
@@ -69,7 +70,7 @@ static void
 do_not_count (fsm_t* this)
 {
 	/*
-	No interpretarlo como bit, continua mandando ACKs
+	No interpretarlo como bit, no reiniciar el timer
     */
 }
 
@@ -78,6 +79,7 @@ halt (fsm_t* this)
 {
     /*
 	Esperas a que vuelva a haber conexión
+	Apagar el timeout
     */
 }
 
@@ -86,8 +88,9 @@ static void
 send_XCK (fsm_t* this)
 {
     /*
-	Enviar ACK
+	Enviar XCK
 	Esperar a que vuelva a haber conexión
+	Apagar el timeout
     */
 }
 
@@ -96,6 +99,7 @@ send_XCK (fsm_t* this)
 Interruption functions
 */
 
+/*
 static void initial_timer (union sigval value)
 {
 	pthread_mutex_lock (&mutex);
@@ -106,25 +110,26 @@ static void initial_timer (union sigval value)
 	// tmr_destroy()
 	printf("TIMEOUT\n");
 }
+*/
 
-
+/*
 int
 sensor_ack_init(TipoProyecto *p_sgp30)
 {
-	/*
+	
 	p_sgp30->realmeasures = 0;
 	p_sgp30->tmr_real_measures = tmr_new (initial_timer); // timer starter when IAQ, turns realmeasures into 1
 	p_sgp30->I2C_ADDRESS_IRIS = 0; // IRIS I2C address
 	p_sgp30->I2C_ADDRESS_SENSOR = OWN_ADDRESS; // SENSOR I2C address
 	p_sgp30->measures [6] = {0,0,0,0,0,0};
 	pthread_mutex_init(&mutex, NULL);
-*/
+
 	printf("\nSystem init complete!\n");
 	fflush(stdout);
 
 	return 0;
 }
-
+*/
 
 int
 fsm_new_sensor (/*int* validp, int pir, int alarm*/)
@@ -137,5 +142,5 @@ fsm_new_sensor (/*int* validp, int pir, int alarm*/)
         {  ACK, check_timeout, IDLE, send_XCK},
         { -1, NULL, -1, NULL },
     };
-    sensor_ack_init(&sgp30);
+    // sensor_ack_init(&sgp30);
 }
