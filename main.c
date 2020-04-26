@@ -51,19 +51,79 @@ delay_until (unsigned int next, unsigned int now) {
 
 void
 socket_init (void){
-  int socket_desc;
-	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+  int socket_desc , new_socket , c;
+	struct sockaddr_in server , client;
 
+	//Create socket
+	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
 	if (socket_desc == -1)
 	{
 		printf("Could not create socket");
 	}
 
+	//Prepare the sockaddr_in structure
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons( 8888 );
+
+	//Bind
+	if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
+	{
+		puts("bind failed");
+	}
+	puts("bind done");
+
+	//Listen
+	listen(socket_desc , 3);
+
+	//Accept and incoming connection
+  puts("Waiting for incoming connections...");
+	c = sizeof(struct sockaddr_in);
+	while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)) )
+	{
+		puts("Connection accepted");
+
+	}
+
+	if (new_socket < 0)
+	{
+		perror("accept failed");
+		return 1;
+	}
+
 	return 0;
 }
+
 void
-socked_receive(void){
+socket_receive(char* receiver){
+
+  int sock = *(int*)socket_desc;
+	int read_size;
+	char *message , client_message[2000];
+
+  while( (read_size = recv(sock , client_message , 2000 , 0)) > 0 )
+	{
+		*receiver = client_message;
+	}
+
+	if(read_size == 0)
+	{
+		puts("Client disconnected");
+		fflush(stdout);
+	}
+	else if(read_size == -1)
+	{
+		perror("recv failed");
+	}
+
 }
+
 void
-socket_send(void) {
+socket_send(char* sender) {
+
+  int sock = *(int*)socket_desc;
+
+  message = *sender;
+	write(sock , message , strlen(message));
+
 }
