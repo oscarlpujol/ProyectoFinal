@@ -4,12 +4,11 @@
 
 #include "sensor.h"
 
-static TipoSensor sgp30;
 static pthread_mutex_t mutex;
 
 enum states {
 	IDLE, // initial state
-	WAIT_16BITS, 
+	WAIT_16BITS,
 	MAQ,
 	MSG_MAQ,
 	MRS,
@@ -22,14 +21,14 @@ static int
 check_start_and_bits (fsm_t* this)
 {
     /*
-	
+
     */
 }
 
 static int
 check_IAQ_and_stop (fsm_t* this)
 {
-    
+
 }
 
 static int
@@ -41,25 +40,25 @@ check_I2C_address(fsm_t* this)
 static int
 check_MAQ (fsm_t* this)
 {
-    
+
 }
 
 static int
 check_ACK_and_MAQ_left (fsm_t* this)
 {
-    
+
 }
 
 static int
 check_C02_or_TVOC_sent (fsm_t* this)
 {
-    
+
 }
 
 static int
 check_XCK_and_notMAQ_and_stop (fsm_t* this)
 {
-    
+
 }
 
 // Void
@@ -68,7 +67,7 @@ static void
 I2C_address_success (fsm_t* this)
 {
     /*
-	Enviar mensaje de que hemos recibido 8 bits (la dirección I2C suponemos)		
+	Enviar mensaje de que hemos recibido 8 bits (la dirección I2C suponemos)
     */
 }
 
@@ -165,7 +164,7 @@ sensor_init(TipoProyecto *p_sgp30)
 }
 
 
-int
+fsm_t*
 fsm_new_sensor (/*int* validp, int pir, int alarm*/)
 {
     static fsm_trans_t alarm_tt[] = {
@@ -178,7 +177,7 @@ fsm_new_sensor (/*int* validp, int pir, int alarm*/)
         {  MSG_MAQ, check_ACK_and_MAQ_left, MSG_MAQ, send_msg_2IRIS},
         {  MSG_MAQ, check_C02_or_TVOC_sent, MSG_MAQ, calculate_sent_CRC},
         {  MSG_MAQ, check_XCK_and_notMAQ_and_stop, IDLE, MAQ_success},
-        /*	MRS message send 
+        /*	MRS message send
         {  MRS, check_start_and_bits, MSG_MRS, I2C_address_received},
         {  MSG_MRS, check_ACK_and_MRS_left, MSG_MRS, send_msg_2IRIS},
         {  MSG_MRS, check_H2_or_ethanol_sent, MSG_MRS, calculate_sent_CRC},
@@ -186,5 +185,4 @@ fsm_new_sensor (/*int* validp, int pir, int alarm*/)
         */
         { -1, NULL, -1, NULL },
     };
-    sensor_init(&sgp30);
 }
