@@ -109,6 +109,8 @@ I2C_address_received (fsm_t* this)
 static void
 send_msg_2IRIS (fsm_t* this)
 {
+    socket_send(&address);
+    address += 1;
     /*
 	Enviar mensaje a la IRIS con las mediciones y mover puntero
     */
@@ -117,6 +119,8 @@ send_msg_2IRIS (fsm_t* this)
 static void
 calculate_sent_CRC (fsm_t* this)
 {
+    socket_send(&address);
+    address += 1;
     /*
 	Calcular CRC y enviarlo
     */
@@ -125,6 +129,11 @@ calculate_sent_CRC (fsm_t* this)
 static void
 MAQ_success (fsm_t* this)
 {
+    for (int i = 0; i < 5; ++i)
+    { 
+    address -= 1;
+    *address = 0;
+    }
     /*
 	Mensaje completado
 	Borrar datos recogidos y reiniciar puntero
