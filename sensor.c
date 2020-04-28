@@ -109,8 +109,12 @@ I2C_address_received (fsm_t* this)
 static void
 send_msg_2IRIS (fsm_t* this)
 {
-    socket_send(&address);
-    address += 1;
+
+	TipoProyecto *p_sgp30;
+	p_sgp30 = (TipoProyecto*)(this->user_data);
+
+	socket_send(&(p_sgp30->address));
+	p_sgp30->address += 1;
     /*
 	Enviar mensaje a la IRIS con las mediciones y mover puntero
     */
@@ -119,18 +123,23 @@ send_msg_2IRIS (fsm_t* this)
 static void
 calculate_sent_CRC (fsm_t* this)
 {
-    socket_send(&address);
-    address += 1;
-    /*
-	Calcular CRC y enviarlo
-    */
+
+	TipoProyecto *p_sgp30;
+	p_sgp30 = (TipoProyecto*)(this->user_data);
+
+	int CRC;
+	CRC = calculate_CRC((int)* p_sgp30->measures[(p_sgp30->address) -2], (int)* p_sgp30->measures[(p_sgp30->address)-1]);
+	p_sgp30->measures[(p_sgp30->address)] = CRC;
+
+	socket_send(&(p_sgp30->address));
+	p_sgp30->address += 1;
 }
 
 static void
 MAQ_success (fsm_t* this)
 {
     for (int i = 0; i < 5; ++i)
-    { 
+    {
     address -= 1;
     *address = 0;
     }
@@ -144,7 +153,8 @@ MAQ_success (fsm_t* this)
 Interruption functions
 */
 
-static void initial_timer (union sigval value){
+static void
+initial_timer (union sigval value){
 
 	pthread_mutex_lock (&mutex);
 	// flags |= (FLAG_TIME_OUT_MEDIDA);
@@ -154,7 +164,6 @@ static void initial_timer (union sigval value){
 	// tmr_destroy()
 	printf("TIMEOUT\n");
 }
-
 
 int
 sensor_init(TipoProyecto *p_sgp30)

@@ -14,6 +14,7 @@ total_sensor_control (void* ignore)
     fsm_t* sensor_ack_fsm = fsm_new_sensor_ack ();
 
     sensor_init(&sgp30);
+    sensor_ack_init(&sgp30);
 
     long a;
     struct timespec spec;

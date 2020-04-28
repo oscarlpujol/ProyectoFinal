@@ -33,6 +33,7 @@ typedef struct{
 
 	int realmeasures; // if 0 -> measures are not real, 400 standard; if 1 -> now you can read
 	tmr_t* tmr_real_measures; // timer starter when IAQ, turns realmeasures into 1
+	tmr_t* tmr_timeout;
 	int I2C_ADDRESS_IRIS; // IRIS I2C address
 	int I2C_ADDRESS_SENSOR; // SENSOR I2C address
 	int measures [6]; // CO2, CO2, CRC_CO2, TVOC, TVOC, CRC_TVOC
