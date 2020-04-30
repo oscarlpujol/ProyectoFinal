@@ -2,6 +2,7 @@
 #include "sensor.h"
 
 static TipoSensor sgp30;
+static TipoFlags flags;
 
 fsm_t* fsm_new_sensor ();
 fsm_t* fsm_new_sensor_ack ();

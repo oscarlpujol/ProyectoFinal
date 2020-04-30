@@ -20,45 +20,71 @@ enum states {
 static int
 check_start_and_bits (fsm_t* this)
 {
-    /*
-
-    */
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (flags.start_cond && flags.bits_received);
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_IAQ_and_stop (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (flags.start_cond && flags.stop_cond);
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_I2C_address(fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = flags.I2I2C_address_wrong;
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_MAQ (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = flags.MAQ;
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_ACK_and_MAQ_left (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (flags.ack && flags.msg_MAQ_left);
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_C02_or_TVOC_sent (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (flags.CO2_sent || flags.TVOC_sent);
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_XCK_and_notMAQ_and_stop (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (flags.xck && !flags.msg_MAQ_left && flags.stop_cond);
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 // Void
@@ -157,10 +183,8 @@ static void
 initial_timer (union sigval value){
 
 	pthread_mutex_lock (&mutex);
-	// flags |= (FLAG_TIME_OUT_MEDIDA);
+	p_sgp30.realmeasures  = 1;
 	pthread_mutex_unlock (&mutex);
-	// num_bits_recibidos = 0;
-	sgp30.realmeasures = 1;
 	// tmr_destroy()
 	printf("TIMEOUT\n");
 }

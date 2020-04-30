@@ -16,33 +16,51 @@ enum states {
 static int
 check_start (fsm_t* this)
 {
-    /*
-
-    */
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = flags.start_cond;
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_8_bits(fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = flags.bits_received;
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_flag (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (flags.ack || flags.xck);
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_stop (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = flags.stop_cond;
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 static int
 check_timeout (fsm_t* this)
 {
-
+	pthread_mutex_lock (&mutex);
+	int result = 0;
+	result = flags.timeout;
+	pthread_mutex_unlock (&mutex);
+	return result;
 }
 
 
@@ -55,6 +73,10 @@ begin (fsm_t* this)
 	p_sgp30 = (TipoProyecto*)(this->user_data);
 
 	tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
+
+	pthread_mutex_lock (&mutex);
+	flags.start_cond = 0;
+	pthread_mutex_unlock (&mutex);
 }
 
 static void
@@ -69,6 +91,10 @@ send_ACK (fsm_t* this)
 
 	tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
 
+	pthread_mutex_lock (&mutex);
+	flags.bits_received = 0;
+	pthread_mutex_unlock (&mutex);
+
 }
 
 static void
@@ -77,6 +103,10 @@ do_not_count (fsm_t* this)
 	/*
 	No interpretarlo como bit, no reiniciar el timer
     */
+	pthread_mutex_lock (&mutex);
+	flags.ack = 0;
+	flags.xck = 0;
+	pthread_mutex_unlock (&mutex);
 }
 
 static void
@@ -88,6 +118,9 @@ halt (fsm_t* this)
 	Esperas a que vuelva a haber conexión
 	Apagar el timeout (¿tmr_destroy  o tmr_stop?)
     */
+	pthread_mutex_lock (&mutex);
+	flags.stop_cond = 0;
+	pthread_mutex_unlock (&mutex);
 }
 
 
@@ -102,6 +135,9 @@ send_XCK (fsm_t* this)
 	Esperar a que vuelva a haber conexión
 	Apagar el timeout
     */
+	pthread_mutex_lock (&mutex);
+	flags.timeout = 0;
+	pthread_mutex_unlock (&mutex);
 }
 
 
@@ -113,7 +149,7 @@ Interruption functions
 static void timeout_timer (union sigval value)
 {
 	pthread_mutex_lock (&mutex);
-	// flags |= (FLAG_TIME_OUT_MEDIDA);
+	flags.timeout = 1;
 	pthread_mutex_unlock (&mutex);
 
 	printf("TIMEOUT\n");
