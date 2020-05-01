@@ -35,7 +35,7 @@ bit flagXCK;
 bit flagACK;
 bit CO2;
 
-active proctype sensor_fsm{
+active proctype sensor_fsm () {
 state = 0;
 do
     :: (state == 0)-> atomic {
@@ -45,9 +45,9 @@ do
   	}
     :: (state == 1)-> atomic {
   		if
-  		:: maq -> state = 2; maq = 0;
-      :: I2C -> state = 0; I2C = 0;
-      :: IAQ -> stete = 0; IAQ = 0;
+  		:: (maq && (!I2C) && (!IAQ)) -> state = 2; maq = 0;
+      :: (I2C && (!maq) && (!IAQ)) -> state = 0; I2C = 0;
+      :: (IAQ && (!maq) && (!I2C)) -> state = 0; IAQ = 0;
   		fi
   	}
     :: (state == 2)-> atomic {
@@ -57,9 +57,9 @@ do
   	}
     :: (state == 3)-> atomic {
   		if
-  	  :: flagXCK -> state = 0; flagXCK = 0;
-      :: flagACK -> state = 3; flagACK = 0;
-      :: CO2 -> state = 3; CO2 = 0;
+  	  :: (flagXCK && (!flagACK) && (!CO2)) -> state = 0; flagXCK = 0;
+      :: ((!flagXCK) && (flagACK) && (!CO2)) -> state = 3; flagACK = 0;
+      :: ((!flagXCK) && (!flagACK) && (CO2)) -> state = 3; CO2 = 0;
   		fi
   	}
 od
