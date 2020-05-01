@@ -1,28 +1,28 @@
-ltl spec IDLE {
+ltl IDLE {
 [] (((state == 0) && starts) -> <> (state == 1))
 }
 
-ltl spec w8_1 {
+ltl w8_1 {
 [] (((state == 1) && maq) -> <> (state == 2))
 }
-ltl spec w8_2 {
+ltl w8_2 {
 [] (((state == 1) && I2C) -> <> (state == 0))
 }
-ltl spec w8_3 {
+ltl w8_3 {
 [] (((state == 1) && IAQ) -> <> (state == 0))
 }
 
-ltl spec maqq {
+ltl maqq {
 [] (((state == 2) && starts) -> <> (state == 3))
 }
 
-ltl spec msg_1 {
+ltl msg_1 {
 [] (((state == 3) && flagXCK) -> <> (state == 4))
 }
-ltl spec msg_2 {
+ltl msg_2 {
 [] (((state == 3) && flagACK) -> <> (state == 3))
 }
-ltl spec msg_3 {
+ltl msg_3 {
 [] (((state == 3) && CO2) -> <> (state == 3))
 }
 
