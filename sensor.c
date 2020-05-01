@@ -42,7 +42,7 @@ check_I2C_address(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = flags.I2I2C_address_wrong;
+	result = flags.I2C_address_wrong;
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -92,9 +92,18 @@ check_XCK_and_notMAQ_and_stop (fsm_t* this)
 static void
 I2C_address_success (fsm_t* this)
 {
-    /*
-	Enviar mensaje de que hemos recibido 8 bits (la dirección I2C suponemos)
-    */
+	TipoProyecto *p_sgp30;
+	p_sgp30 = (TipoProyecto*)(this->user_data);
+
+	pritnf("Direccion I2C recibida con exito!\n");
+	printf("I2C address = %d \n", p_sgp30->receiver);
+
+	if(p_sgp30->receiver == p_sgp30->I2C_ADDRESS_SENSOR)
+	{
+		pthread_mutex_lock (&mutex);
+		flags.I2C_address_wrong = 1;
+		pthread_mutex_unlock (&mutex);
+	}
 }
 
 static void

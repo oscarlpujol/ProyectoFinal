@@ -38,6 +38,7 @@ typedef struct{
 	int I2C_ADDRESS_SENSOR; // SENSOR I2C address
 	int measures [6]; // CO2, CO2, CRC_CO2, TVOC, TVOC, CRC_TVOC
 	int* address;
+	char* receiver;
 
 }TipoSensor;
 

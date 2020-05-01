@@ -28,7 +28,7 @@ check_8_bits(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = flags.bits_received;
+	result = (flags.bits_received && !(flags.ack || flags.xck) && !flags.timeout && !flags.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -38,7 +38,7 @@ check_flag (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = (flags.ack || flags.xck);
+	result = (!flags.bits_received && (flags.ack || flags.xck) && !flags.timeout && !flags.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -48,7 +48,7 @@ check_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = flags.stop_cond;
+	result = (!flags.bits_received && !(flags.ack || flags.xck) && !flags.timeout && flags.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -58,11 +58,10 @@ check_timeout (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = flags.timeout;
+	result = (!flags.bits_received && !(flags.ack || flags.xck) && flags.timeout && !flags.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
-
 
 // Void
 
@@ -100,9 +99,6 @@ send_ACK (fsm_t* this)
 static void
 do_not_count (fsm_t* this)
 {
-	/*
-	No interpretarlo como bit, no reiniciar el timer
-    */
 	pthread_mutex_lock (&mutex);
 	flags.ack = 0;
 	flags.xck = 0;
@@ -131,8 +127,6 @@ send_XCK (fsm_t* this)
 	message = "XCK";
 	socket_send(&message);
     /*
-	Enviar XCK
-	Esperar a que vuelva a haber conexión
 	Apagar el timeout
     */
 	pthread_mutex_lock (&mutex);
