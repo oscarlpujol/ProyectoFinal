@@ -65,8 +65,8 @@ typedef struct{
 }TipoFlags;
 
 void
-socket_receive(char* receiver);
+socket_receive(char* receiver, void *socket_desc);
 void
-socket_send(char* sender);
+socket_send(char* sender, void *socket_desc);
 
 #endif /* _SENSOR_H_ */
