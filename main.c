@@ -14,6 +14,7 @@ total_sensor_control (void* ignore)
     fsm_t* sensor_fsm = fsm_new_sensor ();
     fsm_t* sensor_ack_fsm = fsm_new_sensor_ack ();
 
+    socket_init();
     sensor_init(&sgp30);
     sensor_ack_init(&sgp30);
 
@@ -84,6 +85,7 @@ socket_init (void){
 	while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)) )
 	{
 		puts("Connection accepted");
+    sgp30.socket_desc = new_socket;
 
 	}
 
@@ -97,7 +99,7 @@ socket_init (void){
 }
 
 void
-socket_receive(char* receiver){
+socket_receive(char* receiver, void* socket_desc){
 
   int sock = *(int*)socket_desc;
 	int read_size;
@@ -121,7 +123,7 @@ socket_receive(char* receiver){
 }
 
 void
-socket_send(char* sender) {
+socket_send(char* sender, int* socket_desc) {
 
   int sock = *(int*)socket_desc;
 

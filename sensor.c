@@ -148,7 +148,7 @@ send_msg_2IRIS (fsm_t* this)
 	TipoProyecto *p_sgp30;
 	p_sgp30 = (TipoProyecto*)(this->user_data);
 
-	socket_send(&(p_sgp30->address));
+	socket_send(&(p_sgp30->address), &(sgp30->socket_desc));
 	p_sgp30->address += 1;
     /*
 	Enviar mensaje a la IRIS con las mediciones y mover puntero
@@ -166,7 +166,7 @@ calculate_sent_CRC (fsm_t* this)
 	CRC = calculate_CRC((int)* p_sgp30->measures[(p_sgp30->address) -2], (int)* p_sgp30->measures[(p_sgp30->address)-1]);
 	p_sgp30->measures[(p_sgp30->address)] = CRC;
 
-	socket_send(&(p_sgp30->address));
+	socket_send(&(p_sgp30->address), &(sgp30->socket_desc));
 	p_sgp30->address += 1;
 }
 

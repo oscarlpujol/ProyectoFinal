@@ -86,7 +86,7 @@ send_ACK (fsm_t* this)
 
 	char message;
 	message = "ACK";
-	socket_send(&message);
+	socket_send(&message, &(sgp30->socket_desc));
 
 	tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
 
@@ -125,7 +125,7 @@ send_XCK (fsm_t* this)
 {
 	char message;
 	message = "XCK";
-	socket_send(&message);
+	socket_send(&message, &(sgp30->socket_desc));
     /*
 	Apagar el timeout
     */
