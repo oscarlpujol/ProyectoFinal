@@ -10,9 +10,9 @@ enum states {
 	IDLE, // initial state
 	WAIT_16BITS,
 	MAQ,
-	MSG_MAQ,
+	MSG_MAQ/*,
 	MRS,
-	MSG_MRS
+	MSG_MRS*/
 }
 
 // Int
