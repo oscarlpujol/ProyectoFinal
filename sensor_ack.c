@@ -5,6 +5,8 @@
 #include "sensor.h"
 
 static pthread_mutex_t mutex;
+static TipoFlags jarvan;
+static TipoSensor sgp30;
 
 enum states {
 	IDLE, // initial state
@@ -18,7 +20,7 @@ check_start (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = flags.start_cond;
+	result = jarvan.start_cond;
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -28,7 +30,7 @@ check_8_bits(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = (flags.bits_received && !(flags.ack || flags.xck) && !flags.timeout && !flags.stop);
+	result = (jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -38,7 +40,7 @@ check_flag (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = (!flags.bits_received && (flags.ack || flags.xck) && !flags.timeout && !flags.stop);
+	result = (!jarvan.bits_received && (jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -48,7 +50,7 @@ check_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0:
-	result = (!flags.bits_received && !(flags.ack || flags.xck) && !flags.timeout && flags.stop);
+	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && jarvan.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -58,7 +60,7 @@ check_timeout (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (!flags.bits_received && !(flags.ack || flags.xck) && flags.timeout && !flags.stop);
+	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && jarvan.timeout && !jarvan.stop);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -68,30 +70,30 @@ check_timeout (fsm_t* this)
 static void
 begin (fsm_t* this)
 {
-	TipoProyecto *p_sgp30;
-	p_sgp30 = (TipoProyecto*)(this->user_data);
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
 
 	tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
 
 	pthread_mutex_lock (&mutex);
-	flags.start_cond = 0;
+	jarvan.start_cond = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
 static void
 send_ACK (fsm_t* this)
 {
-	TipoProyecto *p_sgp30;
-	p_sgp30 = (TipoProyecto*)(this->user_data);
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
 
 	char message;
-	message = "ACK";
+	message = "ACK\n";
 	socket_send(&message, &(sgp30->socket_desc));
 
 	tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
 
 	pthread_mutex_lock (&mutex);
-	flags.bits_received = 0;
+	jarvan.bits_received = 0;
 	pthread_mutex_unlock (&mutex);
 
 }
@@ -100,22 +102,21 @@ static void
 do_not_count (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	flags.ack = 0;
-	flags.xck = 0;
+	jarvan.ack = 0;
+	jarvan.xck = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
 static void
 halt (fsm_t* this)
 {
-	TipoProyecto *p_sgp30;
-	p_sgp30 = (TipoProyecto*)(this->user_data);
-    /*
-	Esperas a que vuelva a haber conexión
-	Apagar el timeout (¿tmr_destroy  o tmr_stop?)
-    */
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	tmr_destroy(&(p_sgp30->tmr_timeout)); // Puede volver a encenderse otra vez?
+
 	pthread_mutex_lock (&mutex);
-	flags.stop_cond = 0;
+	jarvan.stop_cond = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -124,13 +125,13 @@ static void
 send_XCK (fsm_t* this)
 {
 	char message;
-	message = "XCK";
+	message = "XCK\n";
 	socket_send(&message, &(sgp30->socket_desc));
-    /*
-	Apagar el timeout
-    */
+
+	tmr_destroy(&(p_sgp30->tmr_timeout)); // Puede volver a encenderse otra vez?
+
 	pthread_mutex_lock (&mutex);
-	flags.timeout = 0;
+	jarvan.timeout = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -143,15 +144,17 @@ Interruption functions
 static void timeout_timer (union sigval value)
 {
 	pthread_mutex_lock (&mutex);
-	flags.timeout = 1;
+	jarvan.timeout = 1;
 	pthread_mutex_unlock (&mutex);
 
 	printf("TIMEOUT\n");
 }
 
 int
-sensor_ack_init(TipoProyecto *p_sgp30)
+sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags)
 {
+	jarvan = *flags;
+	sgp30 = *p_sgp_30;
 
 	p_sgp30->tmr_timeout = tmr_new (timeout_timer); // timer starter when IAQ, turns realmeasures into 1
 

@@ -28,6 +28,9 @@
 
 #define OWN_ADDRESS 5000
 #define CLK_MS 5
+#define REALMEASURES_TIME 400
+#define TIMEOUT_TIME 50
+#define SEED 2
 
 typedef struct{
 
@@ -38,7 +41,7 @@ typedef struct{
 	int I2C_ADDRESS_SENSOR; // SENSOR I2C address
 	int measures [6]; // CO2, CO2, CRC_CO2, TVOC, TVOC, CRC_TVOC
 	int socket_desc;
-	int* address;
+	int address;
 	char* receiver;
 
 }TipoSensor;
@@ -58,7 +61,7 @@ typedef struct{
 	unsigned int H2_sent : 1;
 	unsigned int ethanol_sent : 1;
 	unsigned int MAQ : 1;
-	unsigned int msg_MAQ_left : 1;
+	unsigned int msg_MAQ_left : 1; // 1 messages left, 0 not messages left
 	unsigned int CO2_sent : 1;
 	unsigned int TVOC_sent : 1;
 
