@@ -109,6 +109,11 @@ I2C_address_success (fsm_t* this)
 		jarvan.I2C_address_wrong = 1;
 		pthread_mutex_unlock (&mutex);
 	}
+
+	pthread_mutex_lock (&mutex);
+	jarvan.start_cond = 0;
+	jarvan.bits_received = 0;
+	pthread_mutex_unlock (&mutex);
 }
 
 static void
@@ -193,7 +198,7 @@ send_msg_2IRIS (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	socket_send(&(p_sgp30->measures[(p_sgp30->address)]), &(sgp30->socket_desc));
+	socket_send(&(p_sgp30->measures[(p_sgp30->address)]));
 	p_sgp30->address += 1;
 
 	if(p_sgp30->address == 2){
@@ -224,7 +229,7 @@ calculate_sent_CRC (fsm_t* this)
 	CRC = calculate_CRC(p_sgp30->measures[(p_sgp30->address) -2], p_sgp30->measures[(p_sgp30->address)-1]);
 	p_sgp30->measures[(p_sgp30->address)] = CRC;
 
-	socket_send(&(p_sgp30->measures(p_sgp30->address)), &(sgp30->socket_desc));
+	socket_send(&(p_sgp30->measures(p_sgp30->address)));
 	p_sgp30->address += 1;
 
 	if(p_sgp30_address == 5){

@@ -31,6 +31,8 @@
 #define REALMEASURES_TIME 400
 #define TIMEOUT_TIME 50
 #define SEED 2
+#define SOCKETNUMBERSEND 8888
+#define SOCKETNUMBERRECEIVE 8889
 
 typedef struct{
 
@@ -40,9 +42,10 @@ typedef struct{
 	int I2C_ADDRESS_IRIS; // IRIS I2C address
 	int I2C_ADDRESS_SENSOR; // SENSOR I2C address
 	int measures [6]; // CO2, CO2, CRC_CO2, TVOC, TVOC, CRC_TVOC
-	int socket_desc;
+	int socket_desc_send;
+	int socket_desc_receive;
 	int address;
-	char* receiver;
+	char receiver;
 
 }TipoSensor;
 

@@ -88,7 +88,7 @@ send_ACK (fsm_t* this)
 
 	char message;
 	message = "ACK\n";
-	socket_send(&message, &(sgp30->socket_desc));
+	socket_send(&message);
 
 	tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
 
@@ -126,7 +126,7 @@ send_XCK (fsm_t* this)
 {
 	char message;
 	message = "XCK\n";
-	socket_send(&message, &(sgp30->socket_desc));
+	socket_send(&message);
 
 	tmr_destroy(&(p_sgp30->tmr_timeout)); // Puede volver a encenderse otra vez?
 

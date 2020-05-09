@@ -30,18 +30,23 @@
 #define TIME_MAQ 30000
 #define OWN_ADDRESS 1234
 #define SENSOR_ADDRESS 5000
+#define SOCKETNUMBERSEND 8889
+#define SOCKETNUMBERRECEIVE 8888
 
 typedef struct{
 
+	unsigned int state : 1; // 1 -> ON, 0 ->OFF
 	tmr_t* tmr_MAQ;
 	tmr_t* tmr_on;
 	int I2C_ADDRESS_IRIS; // IRIS I2C address
 	int I2C_ADDRESS_SENSOR; // SENSOR I2C address
 	int measures[6];
 	int socket_desc;
-	int address;
+	int* address;
+	int length_next_msg;
 	char* receiver;
 	int num_msg;
+	int num_sent;
 
 }TipoIris;
 
@@ -67,5 +72,9 @@ void
 socket_receive(char* receiver, void *socket_desc);
 void
 socket_send(char* sender, void *socket_desc);
+void
+button_interruption(void);
+void
+button_isr(void);
 
 #endif /* _IRIS_H_ */
