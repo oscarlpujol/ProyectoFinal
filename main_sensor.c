@@ -22,7 +22,7 @@ total_sensor_control (void* ignore)
 
     socket_init();
     sensor_init(&sgp30, &flags_sensor);
-    sensor_ack_init(&sgp30, &flags_sensor_ack);
+    sensor_ack_init(&sgp30, &flags_sensor_ack,&flags_sensor);
 
     long a;
     struct timespec spec;
@@ -177,6 +177,8 @@ observer(void) {
   if(lastMsg == sgp30.receiver) return;
 
   sgp30.receiver = lastMsg;
+  flags_sensor.bits_received = 1;
+  flags_sensor_ack.bits_received = 1;
 
   if (lastMsg == "StartCond"){
     pthread_mutex_lock (&mutex);

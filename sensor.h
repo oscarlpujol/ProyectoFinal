@@ -59,14 +59,16 @@ typedef struct{
 	unsigned int timeout : 1;
 	unsigned int I2C_address_wrong : 1;
 	unsigned int IAQ : 1;
-	unsigned int MRS : 1;
-	unsigned int msg_MRS_left : 1;
-	unsigned int H2_sent : 1;
-	unsigned int ethanol_sent : 1;
+	//unsigned int MRS : 1;
+	//unsigned int msg_MRS_left : 1;
+	//unsigned int H2_sent : 1;
+	//unsigned int ethanol_sent : 1;
 	unsigned int MAQ : 1;
 	unsigned int msg_MAQ_left : 1; // 1 messages left, 0 not messages left
 	unsigned int CO2_sent : 1;
 	unsigned int TVOC_sent : 1;
+	unsigned int incorrect_command : 1;
+	unsigned int correct_command : 1;
 
 }TipoFlags;
 

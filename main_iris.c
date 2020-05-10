@@ -37,7 +37,8 @@ user_init (void)
 {
     xTaskHandle task;
     xTaskCreate (iris_control, "iris", 2048, NULL, 1, &task);
-    xTaskCreate (button_interruption, "button", 2048, NULL, 1, &task);
+    xTaskCreate (button_onoff_interruption, "button_onoff", 2048, NULL, 1, &task);
+    xTaskCreate (button_MAQnow_interruption, "button_MAQnow", 2048, NULL, 1, &task);
 }
 
 void
@@ -91,8 +92,8 @@ socket_init (void){
 	while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)) || (new_socket2 = accept(socket_desc2, (struct sockaddr *)&client2, (socklen_t*) &c2)) )
 	{
 		puts("Connection accepted");
-    sgp30.socket_desc_send = new_socket;
-    sgp30.socket_desc_receive = new_socket2
+    iris.socket_desc_send = new_socket;
+    iris.socket_desc_receive = new_socket2
 
 	}
 
@@ -108,13 +109,13 @@ socket_init (void){
 void
 socket_receive(char* receiver){
 
-  int sock = *(int*)sgp30.socket_desc_receive;
+  int sock = *(int*)iris.socket_desc_receive;
 	int read_size;
 	char *message , client_message[2000];
 
   while( (read_size = recv(sock , client_message , 2000 , 0)) > 0 )
 	{
-		*receiver = client_message;
+		receiver = client_message;
 	}
 
 	if(read_size == 0)
@@ -132,7 +133,7 @@ socket_receive(char* receiver){
 void
 socket_send(char* sender) {
 
-  int sock = *(int*)sgp30.socket_desc_send;
+  int sock = *(int*)iris.socket_desc_send;
 
   message = *sender;
 	write(sock , message , strlen(message));

@@ -12,7 +12,8 @@ int calculate_CRC(int numberone, int numbertwo);
 
 enum states {
 	IDLE, // initial state
-	WAIT_16BITS,
+	WAIT_8BITS_1,
+	WAIT_8BITS_2,
 	MAQ,
 	MSG_MAQ/*,
 	MRS,
@@ -27,6 +28,16 @@ check_start_and_bits (fsm_t* this)
 	pthread_mutex_lock (&mutex);
 	int result = 0:
 	result = (jarvan.start_cond && jarvan.bits_received);
+	pthread_mutex_unlock (&mutex);
+	return result;
+}
+
+static int
+check_bits (fsm_t* this)
+{
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (jarvan.bits_received);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -47,6 +58,26 @@ check_I2C_address(fsm_t* this)
 	pthread_mutex_lock (&mutex);
 	int result = 0:
 	result = jarvan.I2C_address_wrong;
+	pthread_mutex_unlock (&mutex);
+	return result;
+}
+
+static int
+check_incorrect_command(fsm_t* this)
+{
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = (jarvan.incorrect_command || jarvan.timeout);
+	pthread_mutex_unlock (&mutex);
+	return result;
+}
+
+static int
+check_correct_command(fsm_t* this)
+{
+	pthread_mutex_lock (&mutex);
+	int result = 0:
+	result = jarvan.correct_command;
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -262,6 +293,77 @@ MAQ_success (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+static void
+wrong_command(fsm_t* this)
+{
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	message = "XCK\n";
+	socket_send(&(message));
+	pritnf("Command not recognised\n")
+
+	pthread_mutex_lock (&mutex);
+	jarvan.incorrect_command = 0;
+	pthread_mutex_unlock (&mutex);
+}
+
+static void
+correct_command (fsm_t* this)
+{
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	pthread_mutex_lock (&mutex);
+	jarvan.correct_command = 0;
+	pthread_mutex_unlock (&mutex);
+}
+
+static void
+process_bits_1 (fsm_t* this)
+{
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	if((p_sgp30->receiver) == "20"){
+		pthread_mutex_lock (&mutex);
+		jarvan.correct_command = 1;
+		pthread_mutex_unlock (&mutex);
+	}else{
+		pthread_mutex_lock (&mutex);
+		jarvan.incorrect_command = 1;
+		pthread_mutex_unlock (&mutex);
+	}
+
+	pthread_mutex_lock (&mutex);
+	jarvan.bits_received = 0;
+	pthread_mutex_unlock (&mutex);
+}
+
+static void
+process_bits_2 (fsm_t* this)
+{
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	if((p_sgp30->receiver) == "03"){
+		pthread_mutex_lock (&mutex);
+		jarvan.IAQ = 1;
+		pthread_mutex_unlock (&mutex);
+	}else if((p_sgp30->receiver) == "08")
+		pthread_mutex_lock (&mutex);
+		jarvan.MAQ = 1;
+		pthread_mutex_unlock (&mutex);
+	}else{
+		pthread_mutex_lock (&mutex);
+		jarvan.incorrect_command = 1;
+		pthread_mutex_unlock (&mutex);
+	}
+
+	pthread_mutex_lock (&mutex);
+	jarvan.bits_received = 0;
+	pthread_mutex_unlock (&mutex);
+}
 /*
 Interruption functions
 */
@@ -273,7 +375,6 @@ initial_timer (union sigval value){
 	sgp30.realmeasures  = 1;
 	pthread_mutex_unlock (&mutex);
 	tmr_destroy(&(sgp30.tmr_real_measures))
-	printf("TIMEOUT\n");
 }
 
 int
@@ -301,11 +402,16 @@ fsm_t*
 fsm_new_sensor (/*int* validp, int pir, int alarm*/)
 {
     static fsm_trans_t alarm_tt[] = {
-        {  IDLE, check_start_and_bits, WAIT_16BITS, I2C_address_success},
-        {  WAIT_16BITS, check_IAQ_and_stop, IDLE, IAQ_received},
-        {  WAIT_16BITS, check_I2C_address, IDLE, wrong_I2C_address}
-        {  WAIT_16BITS, check_MAQ, MAQ, MAQ_received},
-        {  WAIT_16BITS, check_MRS, MRS, MRS_received},
+        {  IDLE, check_start_and_bits, WAIT_8BITS_1, I2C_address_success},
+        {  WAIT_8BITS_2, check_IAQ_and_stop, IDLE, IAQ_received},
+				{  WAIT_8BITS_1, check_incorrect_command, IDLE, wrong_command},
+				{  WAIT_8BITS_1, check_bits, WAIT_8BITS_1, process_bits_1},
+				{  WAIT_8BITS_2, check_bits, WAIT_8BITS_2, process_bits_2},
+				{  WAIT_8BITS_2, check_incorrect_command, IDLE, wrong_command},
+        {  WAIT_8BITS_1, check_I2C_address, IDLE, wrong_I2C_address},
+				{  WAIT_8BITS_1, check_correct_command, WAIT_8BITS_2, correct_command},
+        {  WAIT_8BITS_2, check_MAQ, MAQ, MAQ_received},
+        //{  WAIT_16BITS, check_MRS, MRS, MRS_received},
         {  MAQ, check_start_and_bits, MSG_MAQ, I2C_address_received},
         {  MSG_MAQ, check_ACK_and_MAQ_left, MSG_MAQ, send_msg_2IRIS},
         {  MSG_MAQ, check_C02_or_TVOC_sent, MSG_MAQ, calculate_sent_CRC},

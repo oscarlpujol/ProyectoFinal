@@ -157,7 +157,7 @@ power_on(fsm_t* this)
   tmr_startms((tmr_t*)(p_sgp30->tmr_on), TIME_ON);
 
   pthread_mutex_lock (&mutex);
-  iris.state = 1;
+  p_iris->state = 1;
 	jarvan.button_on = 0;
 	pthread_mutex_unlock (&mutex);
 }
@@ -172,7 +172,7 @@ power_off(fsm_t* this)
 	fflush(stdout);
 
   pthread_mutex_lock (&mutex);
-    iris.state = 0;
+  p_iris->state = 0;
 	jarvan.button_off = 0;
 	pthread_mutex_unlock (&mutex);
 }
@@ -194,7 +194,7 @@ iaq_start(fsm_t* this)
 
   pthread_mutex_lock (&mutex);
 	jarvan.time_on = 0;
-  jarvan.ack = 1;
+  jarvan.ack = 1; //mandatory to enter un sending loop in MSG_IAQ
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -234,7 +234,7 @@ maq_start(fsm_t* this)
   pthread_mutex_lock (&mutex);
 	jarvan.timeout_MAQ = 0;
   jarvan.MAQ_now _= 0;
-  jarvan.ack = 1;
+  jarvan.ack = 1; //mandatory to enter un sending loop in MSG_MAQ
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -253,7 +253,7 @@ send_msg_2sensor(fsm_t* this)
       pthread_mutex_lock (&mutex);
       jarvan.msg_MAQ_left = 0;
     	pthread_mutex_unlock (&mutex);
-    }else{
+    }else{ //current state is MSG_MAQ
       pthread_mutex_lock (&mutex);
       jarvan.msg_IAQ_left = 0;
     	pthread_mutex_unlock (&mutex);
@@ -289,6 +289,8 @@ received_data_success(fsm_t* this)
   printf("\n8 bits received\n");
 	fflush(stdout);
 
+  socket_receive(p_iris->measures[(p_iris->num_msg)]);
+
   p_iris->num_msg += 1;
 
   if(((p_iris->num_msg) == 3) || ((p_iris->num_msg) == 6)){
@@ -314,27 +316,24 @@ check_msg(fsm_t* this)
   p_iris = (TipoIris*)(this->user_data);
 
   pthread_mutex_lock (&mutex);
-	jarvan.bits_received = 0;
   jarvan.msg_received = 0;
   jarvan.msg_checked = 1;
 	pthread_mutex_unlock (&mutex);
 }
 
 static void
-msg_checked(fsm_t* this)
+msg_checked_success(fsm_t* this)
 {
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  if(check_CRC(p_iris->measures[address-2],p_iris->measures[address-1]) == p_iris->measures[address]){
+  if(check_CRC(p_iris->measures[(p_iris->num_msg)-3],p_iris->measures[(p_iris->num_msg)-2]) == p_iris->measures[(p_iris->num_msg)-1]){
     printf("\nMSG checked...correct\n");
   	fflush(stdout);
   }else{
     printf("\nMSG checked...incorrect\n");
   	fflush(stdout);
   }
-
-  p_iris->num_msg += 1;
 
   if(p_iris->num_msg == 6){
     pthread_mutex_lock (&mutex);
@@ -354,10 +353,10 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   p_iris = (TipoIris*)(this->user_data);
 
   char message = "XCK\n";
-  socket_send(&message, &(p_iris->socket_desc));
+  socket_send(&message);
 
   char message = "StopCond\n";
-  socket_send(&message, &(p_iris->socket_desc));
+  socket_send(&message);
 
   printf("CO2 = %d and %d \n", p_iris->measures[0],p_iris->measures[1]);
   fflush(stdout);
@@ -391,7 +390,7 @@ maq_timer (union sigval value){
 }
 
 static void
-button_isr(void) {
+button_onoff_isr(void) {
   if (iris.state){
     pthread_mutex_lock (&mutex);
   	jarvan.button_off = 1;
@@ -401,6 +400,13 @@ button_isr(void) {
   	jarvan.button_on = 1;
   	pthread_mutex_unlock (&mutex);
   }
+}
+
+static void
+button_MAQnow_isr(void) {
+  pthread_mutex_lock (&mutex);
+  jarvan.MAQ_now = 1;
+  pthread_mutex_unlock (&mutex);
 }
 // Se llama cuando llegan 8 bits al socket que recibe
 static void
@@ -426,6 +432,8 @@ iris_init(TipoIris *p_iris, TipoFlags *flags)
   iris->I2C_ADDRESS_SENSOR = SENSOR_ADDRESS;
   iris->address = 0;
   iris->num_msg = 0;
+  iris->length_next_msg = 0;
+  iris->num_sent = 0;
 
 	printf("\nSystem init complete!\n");
 	fflush(stdout);

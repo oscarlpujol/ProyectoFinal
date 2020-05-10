@@ -6,6 +6,7 @@
 
 static pthread_mutex_t mutex;
 static TipoFlags jarvan;
+static TipoFlags jarvan_sensor;
 static TipoSensor sgp30;
 
 enum states {
@@ -141,19 +142,22 @@ Interruption functions
 */
 
 
-static void timeout_timer (union sigval value)
+static void
+timeout_timer (union sigval value)
 {
 	pthread_mutex_lock (&mutex);
 	jarvan.timeout = 1;
+	jarvan_sensor.timeout = 1;
 	pthread_mutex_unlock (&mutex);
 
 	printf("TIMEOUT\n");
 }
 
 int
-sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags)
+sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags, TipoFlags *flags_sensor)
 {
 	jarvan = *flags;
+	jarvan_sensor = *flags_sensor;
 	sgp30 = *p_sgp_30;
 
 	p_sgp30->tmr_timeout = tmr_new (timeout_timer); // timer starter when IAQ, turns realmeasures into 1

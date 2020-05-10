@@ -41,7 +41,8 @@ typedef struct{
 	int I2C_ADDRESS_IRIS; // IRIS I2C address
 	int I2C_ADDRESS_SENSOR; // SENSOR I2C address
 	int measures[6];
-	int socket_desc;
+	int socket_desc_send;
+	int socket_desc_receive;
 	int* address;
 	int length_next_msg;
 	char* receiver;
@@ -73,8 +74,12 @@ socket_receive(char* receiver, void *socket_desc);
 void
 socket_send(char* sender, void *socket_desc);
 void
-button_interruption(void);
+button_onoff_interruption(void);
 void
-button_isr(void);
+button_onoff_isr(void);
+void
+button_MAQnow_interruption();
+void
+button_MAQ_isr(void);
 
 #endif /* _IRIS_H_ */
