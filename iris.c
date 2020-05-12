@@ -6,11 +6,12 @@
 
 static pthread_mutex_t mutex;
 static TipoFlags jarvan;
+static TipoIris iris;
 
 int calculate_CRC(int numberone, int numbertwo);
 
-static char[3][20] iaq_message = {"5000","20","03"};
-static char[4][20] maq_message = {"5000", "20", "08", "1234"};
+static char iaq_message[3][20] = {"5000","20","03"};
+static char maq_message[4][20] = {"5000", "20", "08", "1234"};
 
 enum states {
   SLEEP, // initial state
@@ -19,7 +20,7 @@ enum states {
 	MSG_MAQ,
   LISTEN,
 	CHECK_CRC
-}
+};
 
 // Int
 
@@ -27,7 +28,7 @@ static int
 check_button_on (fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.button_on);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -37,7 +38,7 @@ static int
 check_button_off(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.button_off);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -47,7 +48,7 @@ static int
 check_time_on_not_init(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.time_on && !jarvan.initialized);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -57,7 +58,7 @@ static int
 check_flag_ACK_msg_IAQ(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.ack && jarvan.msg_IAQ_left);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -67,7 +68,7 @@ static int
 check_flag_ACK_not_msg_IAQ(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.ack && !jarvan.msg_IAQ_left);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -77,7 +78,7 @@ static int
 check_init_timeout_measure(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.initialized && (jarvan.timeout_MAQ || jarvan.MAQ_now));
   pthread_mutex_unlock (&mutex);
   return result;
@@ -87,7 +88,7 @@ static int
 check_flag_ACK_msg_MAQ_left(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.ack && jarvan.msg_MAQ_left);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -97,7 +98,7 @@ static int
 check_flag_ACK_not_msg_MAQ_left(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.ack && !jarvan.msg_MAQ_left);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -107,7 +108,7 @@ static int
 check_eight_bits_received(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.bits_received);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -117,7 +118,7 @@ static int
 check_msg_received_IRIS_not_msg_checked(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.msg_received && !jarvan.msg_checked);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -127,7 +128,7 @@ static int
 check_msg_checked(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
+  int result = 0;
   result = (jarvan.msg_checked);
   pthread_mutex_unlock (&mutex);
   return result;
@@ -137,8 +138,8 @@ static int
 check_all_msg_received(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
-  int result = 0:
-  result = (jarvan.CO2_received && jarvan.TVOC_received);
+  int result = 0;
+  result = (jarvan.all_msg_received);
   pthread_mutex_unlock (&mutex);
   return result;
 }
@@ -154,7 +155,7 @@ power_on(fsm_t* this)
   printf("\nInitializating sensor\n");
 	fflush(stdout);
 
-  tmr_startms((tmr_t*)(p_sgp30->tmr_on), TIME_ON);
+  tmr_startms((tmr_t*)(p_iris->tmr_on), TIME_ON);
 
   pthread_mutex_lock (&mutex);
   p_iris->state = 1;
@@ -207,7 +208,7 @@ iaq_success(fsm_t* this)
   printf("\nIAQ success\n");
 	fflush(stdout);
 
-  tmr_startms((tmr_t*)(p_sgp30->tmr_MAQ), TIME_MAQ);
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
 
   pthread_mutex_lock (&mutex);
 	jarvan.ack = 0;
@@ -233,7 +234,7 @@ maq_start(fsm_t* this)
 
   pthread_mutex_lock (&mutex);
 	jarvan.timeout_MAQ = 0;
-  jarvan.MAQ_now _= 0;
+  jarvan.MAQ_now = 0;
   jarvan.ack = 1; //mandatory to enter un sending loop in MSG_MAQ
 	pthread_mutex_unlock (&mutex);
 }
@@ -249,7 +250,7 @@ send_msg_2sensor(fsm_t* this)
   p_iris->num_sent += 1;
 
   if((p_iris->num_sent) == (p_iris->length_next_msg)){
-    if(this.current_state == MSG_IAQ){
+    if(this->current_state == MSG_IAQ){
       pthread_mutex_lock (&mutex);
       jarvan.msg_MAQ_left = 0;
     	pthread_mutex_unlock (&mutex);
@@ -300,7 +301,7 @@ received_data_success(fsm_t* this)
   }
 
   if((p_iris->num_msg) <= 5){
-    char message = "ACK\n"
+    char message = "ACK\n";
     socket_send(&(message));
   }
 
@@ -327,7 +328,7 @@ msg_checked_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  if(check_CRC(p_iris->measures[(p_iris->num_msg)-3],p_iris->measures[(p_iris->num_msg)-2]) == p_iris->measures[(p_iris->num_msg)-1]){
+  if(calculate_CRC(p_iris->measures[(p_iris->num_msg)-3],p_iris->measures[(p_iris->num_msg)-2]) == p_iris->measures[(p_iris->num_msg)-1]){
     printf("\nMSG checked...correct\n");
   	fflush(stdout);
   }else{
@@ -355,7 +356,7 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   char message = "XCK\n";
   socket_send(&message);
 
-  char message = "StopCond\n";
+  message = "StopCond\n";
   socket_send(&message);
 
   printf("CO2 = %d and %d \n", p_iris->measures[0],p_iris->measures[1]);
@@ -363,7 +364,7 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   printf("TVOC = %d and %d \n", p_iris->measures[3],p_iris->measures[4]);
   fflush(stdout);
 
-  tmr_startms((tmr_t*)(p_sgp30->tmr_MAQ), TIME_MAQ);
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
 
   pthread_mutex_lock (&mutex);
   jarvan.all_msg_received = 0;
@@ -389,7 +390,7 @@ maq_timer (union sigval value){
 	pthread_mutex_unlock (&mutex);
 }
 
-static void
+void
 button_onoff_isr(void) {
   if (iris.state){
     pthread_mutex_lock (&mutex);
@@ -426,14 +427,14 @@ iris_init(TipoIris *p_iris, TipoFlags *flags)
 
 	pthread_mutex_init(&mutex, NULL);
 
-  iris->tmr_MAQ = tmr_new (maq_timer);
-  iris->tmr_on = tmr_new(initial_timer);
-  iris->I2C_ADDRESS_IRIS = OWN_ADDRESS;
-  iris->I2C_ADDRESS_SENSOR = SENSOR_ADDRESS;
-  iris->address = 0;
-  iris->num_msg = 0;
-  iris->length_next_msg = 0;
-  iris->num_sent = 0;
+  iris.tmr_MAQ = tmr_new (maq_timer);
+  iris.tmr_on = tmr_new(initial_timer);
+  iris.I2C_ADDRESS_IRIS = OWN_ADDRESS;
+  iris.I2C_ADDRESS_SENSOR = SENSOR_ADDRESS;
+  iris.address = 0;
+  iris.num_msg = 0;
+  iris.length_next_msg = 0;
+  iris.num_sent = 0;
 
 	printf("\nSystem init complete!\n");
 	fflush(stdout);

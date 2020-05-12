@@ -1,6 +1,8 @@
 
 #include "sensor.h"
 
+static pthread_mutex_t mutex;
+
 static TipoSensor sgp30;
 static TipoFlags flags_sensor;
 static TipoFlags flags_sensor_ack;
@@ -11,35 +13,41 @@ fsm_t* fsm_new_sensor ();
 fsm_t* fsm_new_sensor_ack ();
 void delay_until(unsigned int next, unsigned int now);
 void observer();
+int socket_init();
+int sensor_init(TipoSensor* sensor, TipoFlags* flags);
+int sensor_ack_init(TipoSensor* sensor, TipoFlags* flags, TipoFlags* flags2);
 
 static void
 total_sensor_control (void* ignore)
 {
-    fsm_t* sensor_fsm = fsm_new_sensor ();
-    fsm_t* sensor_ack_fsm = fsm_new_sensor_ack ();
 
-    srand(SEED);
+  pthread_mutex_init(&mutex, NULL);
 
-    socket_init();
-    sensor_init(&sgp30, &flags_sensor);
-    sensor_ack_init(&sgp30, &flags_sensor_ack,&flags_sensor);
+  fsm_t* sensor_fsm = fsm_new_sensor ();
+  fsm_t* sensor_ack_fsm = fsm_new_sensor_ack ();
 
-    long a;
-    struct timespec spec;
+  srand(SEED);
+
+  socket_init();
+  sensor_init(&sgp30, &flags_sensor);
+  sensor_ack_init(&sgp30, &flags_sensor_ack,&flags_sensor);
+
+  long a;
+  struct timespec spec;
+  clock_gettime(CLOCK_REALTIME, &spec);
+  a = round(spec.tv_nsec / 1000000);
+  unsigned int ms = a;
+
+  while (1) {
+    fsm_fire (sensor_ack_fsm);
+    fsm_fire (sensor_fsm); // Se puede hacer así? o con dos procesos diferentes?
+
     clock_gettime(CLOCK_REALTIME, &spec);
     a = round(spec.tv_nsec / 1000000);
-    unsigned int ms = a;
+    unsigned int now = ms;
 
-    while (1) {
-        fsm_fire (sensor_ack_fsm);
-        fsm_fire (sensor_fsm); // Se puede hacer así? o con dos procesos diferentes?
-
-        clock_gettime(CLOCK_REALTIME, &spec);
-        a = round(spec.tv_nsec / 1000000);
-        unsigned int now = ms;
-
-        ms += CLK_MS; // necesitamos constante CLK_MS
-        delay_until (ms,now);
+    ms += CLK_MS; // necesitamos constante CLK_MS
+    delay_until (ms,now);
     }
 }
 
@@ -79,8 +87,8 @@ delay_until (unsigned int next, unsigned int now) {
 	}
 }
 
-void
-socket_init (void){
+int
+socket_init (){
   int socket_desc , new_socket , c;
 	struct sockaddr_in server , client;
 
@@ -119,11 +127,11 @@ socket_init (void){
   puts("Waiting for incoming connections...");
 	c = sizeof(struct sockaddr_in);
   c2 = sizeof(struct sockaddr_in);
-	while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)) || (new_socket2 = accept(socket_desc2, (struct sockaddr *)&client2, (socklen_t*) &c2)) )
+	if( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)) || (new_socket2 = accept(socket_desc2, (struct sockaddr *)&client2, (socklen_t*) &c2)) )
 	{
 		puts("Connection accepted");
     sgp30.socket_desc_send = new_socket;
-    sgp30.socket_desc_receive = new_socket2
+    sgp30.socket_desc_receive = new_socket2;
 
 	}
 
@@ -165,6 +173,7 @@ socket_send(char* sender) {
 
   int sock = *(int*)sgp30.socket_desc_send;
 
+  char message;
   message = *sender;
 	write(sock , message , strlen(message));
 

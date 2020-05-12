@@ -5,6 +5,8 @@ static TipoFlags flags;
 
 fsm_t* fsm_new_iris ();
 void delay_until(unsigned int next, unsigned int now);
+int socket_init();
+int iris_init(TipoIris* iris, TipoFlags* flags);
 
 static void
 total_iris_control (void* ignore)
@@ -36,7 +38,7 @@ void
 user_init (void)
 {
     xTaskHandle task;
-    xTaskCreate (iris_control, "iris", 2048, NULL, 1, &task);
+    xTaskCreate (total_iris_control, "iris", 2048, NULL, 1, &task);
     xTaskCreate (button_onoff_interruption, "button_onoff", 2048, NULL, 1, &task);
     xTaskCreate (button_MAQnow_interruption, "button_MAQnow", 2048, NULL, 1, &task);
 }
@@ -49,7 +51,7 @@ delay_until (unsigned int next, unsigned int now) {
 	}
 }
 
-void
+int
 socket_init (void){
   int socket_desc , new_socket , c;
 	struct sockaddr_in server , client;
@@ -89,11 +91,11 @@ socket_init (void){
   puts("Waiting for incoming connections...");
 	c = sizeof(struct sockaddr_in);
   c2 = sizeof(struct sockaddr_in);
-	while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)) || (new_socket2 = accept(socket_desc2, (struct sockaddr *)&client2, (socklen_t*) &c2)) )
+	if( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)) || (new_socket2 = accept(socket_desc2, (struct sockaddr *)&client2, (socklen_t*) &c2)) )
 	{
 		puts("Connection accepted");
     iris.socket_desc_send = new_socket;
-    iris.socket_desc_receive = new_socket2
+    iris.socket_desc_receive = new_socket2;
 
 	}
 
@@ -135,6 +137,7 @@ socket_send(char* sender) {
 
   int sock = *(int*)iris.socket_desc_send;
 
+  char message;
   message = *sender;
 	write(sock , message , strlen(message));
 

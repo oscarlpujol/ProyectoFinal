@@ -15,9 +15,9 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>	//inet_addr
-#include "esp_common.h"
-#include "gpio.h"
-#include "freertos/task.h"
+//#include "esp_common.h"
+//#include "gpio.h"
+//#include "freertos/task.h"
 
 // #include <wiringPi.h>
 
@@ -73,8 +73,8 @@ typedef struct{
 }TipoFlags;
 
 void
-socket_receive(char* receiver, void *socket_desc);
+socket_receive(char* receiver);
 void
-socket_send(char* sender, void *socket_desc);
+socket_send(char* sender);
 
 #endif /* _SENSOR_H_ */

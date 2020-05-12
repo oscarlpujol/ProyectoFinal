@@ -15,9 +15,9 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>	//inet_addr
-#include "esp_common.h"
-#include "gpio.h"
-#include "freertos/task.h"
+//#include "esp_common.h"
+//#include "gpio.h"
+//#include "freertos/task.h"
 
 // #include <wiringPi.h>
 
@@ -26,6 +26,7 @@
 
 // Variables
 
+#define CLK_MS 5
 #define TIME_ON 15
 #define TIME_MAQ 30000
 #define OWN_ADDRESS 1234
@@ -70,9 +71,9 @@ typedef struct{
 }TipoFlags;
 
 void
-socket_receive(char* receiver, void *socket_desc);
+socket_receive(char* receiver);
 void
-socket_send(char* sender, void *socket_desc);
+socket_send(char* sender);
 void
 button_onoff_interruption(void);
 void
@@ -80,6 +81,6 @@ button_onoff_isr(void);
 void
 button_MAQnow_interruption();
 void
-button_MAQ_isr(void);
+button_MAQnow_isr(void);
 
 #endif /* _IRIS_H_ */

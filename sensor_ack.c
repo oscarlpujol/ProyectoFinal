@@ -12,7 +12,7 @@ static TipoSensor sgp30;
 enum states {
 	IDLE, // initial state
 	ACK
-}
+};
 
 // Int
 
@@ -20,7 +20,7 @@ static int
 check_start (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = jarvan.start_cond;
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -30,8 +30,8 @@ static int
 check_8_bits(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
-	result = (jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop);
+	int result = 0;
+	result = (jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -40,8 +40,8 @@ static int
 check_flag (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
-	result = (!jarvan.bits_received && (jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop);
+	int result = 0;
+	result = (!jarvan.bits_received && (jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -50,8 +50,8 @@ static int
 check_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
-	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && jarvan.stop);
+	int result = 0;
+	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -61,7 +61,7 @@ check_timeout (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && jarvan.timeout && !jarvan.stop);
+	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && jarvan.timeout && !jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -125,6 +125,9 @@ halt (fsm_t* this)
 static void
 send_XCK (fsm_t* this)
 {
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
 	char message;
 	message = "XCK\n";
 	socket_send(&message);
@@ -158,7 +161,7 @@ sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags, TipoFlags *flags_sensor)
 {
 	jarvan = *flags;
 	jarvan_sensor = *flags_sensor;
-	sgp30 = *p_sgp_30;
+	sgp30 = *p_sgp30;
 
 	p_sgp30->tmr_timeout = tmr_new (timeout_timer); // timer starter when IAQ, turns realmeasures into 1
 

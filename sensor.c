@@ -18,7 +18,7 @@ enum states {
 	MSG_MAQ/*,
 	MRS,
 	MSG_MRS*/
-}
+};
 
 // Int
 
@@ -26,7 +26,7 @@ static int
 check_start_and_bits (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.start_cond && jarvan.bits_received);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -36,7 +36,7 @@ static int
 check_bits (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.bits_received);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -46,7 +46,7 @@ static int
 check_IAQ_and_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.start_cond && jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -56,7 +56,7 @@ static int
 check_I2C_address(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = jarvan.I2C_address_wrong;
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -66,7 +66,7 @@ static int
 check_incorrect_command(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.incorrect_command || jarvan.timeout);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -76,7 +76,7 @@ static int
 check_correct_command(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = jarvan.correct_command;
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -86,7 +86,7 @@ static int
 check_MAQ (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = jarvan.MAQ;
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -96,7 +96,7 @@ static int
 check_ACK_and_MAQ_left (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.ack && jarvan.msg_MAQ_left);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -106,7 +106,7 @@ static int
 check_C02_or_TVOC_sent (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.CO2_sent || jarvan.TVOC_sent);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -116,7 +116,7 @@ static int
 check_XCK_and_notMAQ_and_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
-	int result = 0:
+	int result = 0;
 	result = (jarvan.xck && !jarvan.msg_MAQ_left && jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
@@ -130,7 +130,7 @@ I2C_address_success (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	pritnf("Direccion I2C recibida con exito!\n");
+	printf("Direccion I2C recibida con exito!\n");
 	printf("I2C address = %d \n", p_sgp30->receiver);
 	fflush(stdout);
 
@@ -215,7 +215,7 @@ I2C_address_received (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	p_sgp30->I2C_ADDRESS_IRIS = *(p_sgp30->receiver);
+	p_sgp30->I2C_ADDRESS_IRIS = (int)(p_sgp30->receiver);
 
 	pthread_mutex_lock (&mutex);
 	jarvan.ack = 0;
@@ -260,10 +260,10 @@ calculate_sent_CRC (fsm_t* this)
 	CRC = calculate_CRC(p_sgp30->measures[(p_sgp30->address) -2], p_sgp30->measures[(p_sgp30->address)-1]);
 	p_sgp30->measures[(p_sgp30->address)] = CRC;
 
-	socket_send(&(p_sgp30->measures(p_sgp30->address)));
+	socket_send(&(p_sgp30->measures[(p_sgp30->address)]));
 	p_sgp30->address += 1;
 
-	if(p_sgp30_address == 5){
+	if(p_sgp30->address == 5){
 		pthread_mutex_lock (&mutex);
 		jarvan.msg_MAQ_left = 0;
 		pthread_mutex_unlock (&mutex);
@@ -283,7 +283,7 @@ MAQ_success (fsm_t* this)
 
 	for (int i = 0; i <= 5; ++i){
     p_sgp30->address -= 1;
-    p_sgp30->measures[(p_sgp30->address)]-> = 0;
+    p_sgp30->measures[(p_sgp30->address)] = 0;
   }
 
 	pthread_mutex_lock (&mutex);
@@ -299,9 +299,9 @@ wrong_command(fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	message = "XCK\n";
+	char message = "XCK\n";
 	socket_send(&(message));
-	pritnf("Command not recognised\n")
+	printf("Command not recognised\n");
 
 	pthread_mutex_lock (&mutex);
 	jarvan.incorrect_command = 0;
@@ -325,7 +325,7 @@ process_bits_1 (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	if((p_sgp30->receiver) == "20"){
+	if(*(p_sgp30->receiver) == "20"){
 		pthread_mutex_lock (&mutex);
 		jarvan.correct_command = 1;
 		pthread_mutex_unlock (&mutex);
@@ -346,11 +346,11 @@ process_bits_2 (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	if((p_sgp30->receiver) == "03"){
+	if(*(p_sgp30->receiver) == "03"){
 		pthread_mutex_lock (&mutex);
 		jarvan.IAQ = 1;
 		pthread_mutex_unlock (&mutex);
-	}else if((p_sgp30->receiver) == "08")
+	}else if(*(p_sgp30->receiver) == "08"){
 		pthread_mutex_lock (&mutex);
 		jarvan.MAQ = 1;
 		pthread_mutex_unlock (&mutex);
@@ -374,20 +374,25 @@ initial_timer (union sigval value){
 	pthread_mutex_lock (&mutex);
 	sgp30.realmeasures  = 1;
 	pthread_mutex_unlock (&mutex);
-	tmr_destroy(&(sgp30.tmr_real_measures))
+	tmr_destroy(&(sgp30.tmr_real_measures));
 }
 
 int
 sensor_init(TipoSensor *p_sgp30, TipoFlags *flags)
 {
 	jarvan = *flags;
-	sgp_30 = *p_sgp30;
+	sgp30 = *p_sgp30;
 
-	sgp30->realmeasures = 0;
-	sgp30->tmr_real_measures = tmr_new (initial_timer); // timer starter when IAQ, turns realmeasures into 1
-	sgp30->I2C_ADDRESS_IRIS = 0; // IRIS I2C address
-	sgp30->I2C_ADDRESS_SENSOR = OWN_ADDRESS; // SENSOR I2C address
-	sgp30->measures [6] = {0,0,0,0,0,0};
+	sgp30.realmeasures = 0;
+	sgp30.tmr_real_measures = tmr_new (initial_timer); // timer starter when IAQ, turns realmeasures into 1
+	sgp30.I2C_ADDRESS_IRIS = 0; // IRIS I2C address
+	sgp30.I2C_ADDRESS_SENSOR = OWN_ADDRESS; // SENSOR I2C address
+	sgp30.measures[0] = 0;
+	sgp30.measures[1] = 0;
+	sgp30.measures[2] = 0;
+	sgp30.measures[3] = 0;
+	sgp30.measures[4] = 0;
+	sgp30.measures[5] = 0;
 	pthread_mutex_init(&mutex, NULL);
 
 
