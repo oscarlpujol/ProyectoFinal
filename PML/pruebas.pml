@@ -52,20 +52,13 @@ active proctype sensor_fsm () {
 
 active proctype entorno() {
 	do
-	::  state == 0 ->
-		if
-		:: starts = 1
-		fi
-	:: state ==1 ->
-		if
-		:: starts = 1
-		:: ack_or_xck = 1
-		:: times = 1
-		:: received = 1
-		fi
-  :: else ->
-    if
-    :: starts = 1
-    fi
+	:: if
+	   :: starts = 1
+	   :: ack_or_xck = 1
+	   :: times = 1
+	   :: received = 1
+	   :: skip
+	   fi;
+	   printf("")
 	od
 }
