@@ -186,8 +186,6 @@ observer(void) {
   if(lastMsg == sgp30.receiver) return;
 
   sgp30.receiver = lastMsg;
-  flags_sensor.bits_received = 1;
-  flags_sensor_ack.bits_received = 1;
 
   if (lastMsg == "StartCond"){
     pthread_mutex_lock (&mutex);
@@ -206,9 +204,12 @@ observer(void) {
   	pthread_mutex_unlock (&mutex);
   }else if (lastMsg == "XCK"){
     pthread_mutex_lock (&mutex);
-  	flags_sensor.ack = 1;
-  	flags_sensor_ack.ack = 1;
+  	flags_sensor.xck = 1;
+  	flags_sensor_ack.xck = 1;
   	pthread_mutex_unlock (&mutex);
-  }else{}
+  }else{
+    flags_sensor.bits_received = 1;
+    flags_sensor_ack.bits_received = 1;
+  }
 
 }
