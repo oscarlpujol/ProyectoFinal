@@ -59,7 +59,7 @@ check_flag_ACK_msg_IAQ(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
   int result = 0;
-  result = (jarvan.ack && jarvan.msg_IAQ_left);
+  result = (jarvan.ack && !jarvan.msg_IAQ_left);
   pthread_mutex_unlock (&mutex);
   return result;
 }
@@ -89,7 +89,7 @@ check_flag_ACK_msg_MAQ_left(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
   int result = 0;
-  result = (jarvan.ack && jarvan.msg_MAQ_left);
+  result = (jarvan.ack && !jarvan.msg_MAQ_left);
   pthread_mutex_unlock (&mutex);
   return result;
 }
@@ -190,8 +190,12 @@ iaq_start(fsm_t* this)
   p_iris->address = &(iaq_message[0][0]);
   p_iris->length_next_msg = (sizeof(iaq_message) / sizeof(iaq_message[0]));
 
-  char message[20] = "StartCond";
-  write(p_iris->socket_desc,&(message),20);
+  char message[20] = "StartCond\n";
+  write(p_iris->socket_desc,&message,20);
+
+  /*printf("%s\n", &message);
+  printf("%s\n", (p_iris->address));
+  fflush(stdout);*/
 
   pthread_mutex_lock (&mutex);
 	jarvan.time_on = 0;
@@ -229,7 +233,7 @@ maq_start(fsm_t* this)
   p_iris->address = &(maq_message[0][0]);
   p_iris->length_next_msg = (sizeof(maq_message) / sizeof(maq_message[0]));
 
-  char message[20] = "StartCond";
+  char message[20] = "StartCond\n";
   write(p_iris->socket_desc,&(message),20);
 
   pthread_mutex_lock (&mutex);
@@ -245,7 +249,9 @@ send_msg_2sensor(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  write(p_iris->socket_desc,p_iris->address,20);
+  write(p_iris->socket_desc,(p_iris->address),20);
+  printf("%s\n",(p_iris->address));
+  fflush(stdout);
   p_iris->address += 1;
   p_iris->num_sent += 1;
 
@@ -301,8 +307,8 @@ received_data_success(fsm_t* this)
   }
 
   if((p_iris->num_msg) <= 5){
-    char message[20] = "ACK";
-    write(p_iris->socket_desc,&(message),20);
+    char message[20] = "ACK\n";
+    write(p_iris->socket_desc,&message,20);
   }
 
   pthread_mutex_lock (&mutex);
@@ -353,10 +359,10 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  char message[20]= "XCK";
+  char message[20]= "XCK\n";
   write(p_iris->socket_desc,&message,20);
 
-  char message2[20] = "StopCond";
+  char message2[20] = "StopCond\n";
   write(p_iris->socket_desc,&message,20);
 
   printf("CO2 = %d and %d \n", p_iris->measures[0],p_iris->measures[1]);
@@ -409,13 +415,6 @@ button_MAQnow_isr() {
   jarvan.MAQ_now = 1;
   pthread_mutex_unlock (&mutex);
 }
-// Se llama cuando llegan 8 bits al socket que recibe
-static void
-socket_receive_observer() {
-  pthread_mutex_lock (&mutex);
-  jarvan.bits_received = 1;
-  pthread_mutex_unlock (&mutex);
-}
 
 //Init
 
@@ -430,8 +429,8 @@ iris_init(TipoIris *p_iris, TipoFlags *flags)
   iris.state = 0;
   iris.tmr_MAQ = tmr_new (maq_timer);
   iris.tmr_on = tmr_new(initial_timer);
-  iris.I2C_ADDRESS_IRIS = OWN_ADDRESS;
-  iris.I2C_ADDRESS_SENSOR = SENSOR_ADDRESS;
+  strcpy(iris.I2C_ADDRESS_IRIS, OWN_ADDRESS);
+  strcpy(iris.I2C_ADDRESS_SENSOR, SENSOR_ADDRESS);
   iris.measures[0] = 0;
   iris.measures[1] = 0;
   iris.measures[2] = 0;

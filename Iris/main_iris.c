@@ -16,8 +16,13 @@ total_iris_control (void* ignore)
     socket_init();
     iris_init(&iris, &flags);
 
-    char message[1024] = "hola";
-    write(iris.socket_desc, &message,1024); //no consigo comunicacion
+    /*char* message = "hola\n";
+    int result;
+    result = write(iris.socket_desc, message,strlen(message)); //no consigo comunicacion
+    printf("%d\n", result);
+    fflush(stdout);
+    printf("He pasado\n");
+    fflush(stdout);*/
 
     struct timeval next_activation;
     struct timeval now, timeout;

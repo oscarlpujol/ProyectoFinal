@@ -28,8 +28,8 @@
 #define CLK_MS 5
 #define TIME_ON 15
 #define TIME_MAQ 30000
-#define OWN_ADDRESS 1234
-#define SENSOR_ADDRESS 5000
+#define OWN_ADDRESS "1234"
+#define SENSOR_ADDRESS "5000"
 #define SOCKETNUMBER 8888
 
 typedef struct{
@@ -37,11 +37,11 @@ typedef struct{
 	unsigned int state : 1; // 1 -> ON, 0 ->OFF
 	tmr_t* tmr_MAQ;
 	tmr_t* tmr_on;
-	int I2C_ADDRESS_IRIS; // IRIS I2C address
-	int I2C_ADDRESS_SENSOR; // SENSOR I2C address
+	char I2C_ADDRESS_IRIS[20]; // IRIS I2C address
+	char I2C_ADDRESS_SENSOR[20]; // SENSOR I2C address
 	int measures[6];
 	int socket_desc;
-	char* address;
+	char (*address);
 	int length_next_msg;
 	int num_msg;
 	int num_sent;
