@@ -7,7 +7,11 @@ static TipoSensor sgp30;
 static TipoFlags flags_sensor;
 static TipoFlags flags_sensor_ack;
 
-static char lastMsg;
+static char lastMsg[20];
+static char startcond[20] = "StartCond\n";
+static char stopcond[20] = "StopCond\n";
+static char ack[20] = "ACK\n";
+static char xck[20] = "XCK\n";
 
 fsm_t* fsm_new_sensor ();
 fsm_t* fsm_new_sensor_ack ();
@@ -29,10 +33,18 @@ total_sensor_control (void* ignore)
   sensor_init(&sgp30, &flags_sensor);
   sensor_ack_init(&sgp30, &flags_sensor_ack,&flags_sensor);
 
-  char message[1024];
-  read(sgp30.socket_desc, &message,1024); // no lee nada, se queda esperando
-  printf("%s\n", message);
+  /*char message[20];
+  int result;
+  result = read(sgp30.socket_desc, &message,20); // no lee nada, se queda esperando
+  char aux[20] = "hola\n";
+  if(strcmp(&message,&aux) == 0){
+  printf("He pasado\n");
   fflush(stdout);
+}
+  printf("%s\n", &message);
+  fflush(stdout);
+  printf("%d\n", result);
+  fflush(stdout);*/
 
   struct timeval next_activation;
   struct timeval now, timeout;
@@ -63,6 +75,8 @@ socket_receive_observer(void* ignore) { //funcion que se encarga de activar los 
     gettimeofday (&now, NULL);
     timeval_sub (&timeout, &next_activation, &now);
     select (0, NULL, NULL, NULL, &timeout) ;
+
+    observer();
   }
 }
 
@@ -85,7 +99,7 @@ socket_init (){
 
 	//Create socket
 	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-  sgp30.socket_desc = new_socket;
+  sgp30.socket_desc = socket_desc;
 
 	if (socket_desc == -1)
 	{
@@ -112,35 +126,27 @@ socket_init (){
 
 int
 observer() {
-  read(&sgp30.socket_desc, &lastMsg, 20);
+  read(sgp30.socket_desc, &lastMsg, 20);
 
-  if(lastMsg == sgp30.receiver) return;
+  new_msg(&lastMsg);
 
-  sgp30.receiver = lastMsg;
-
-  if (lastMsg == "StartCond"){
-    pthread_mutex_lock (&mutex);
-  	flags_sensor.start_cond = 1;
-  	flags_sensor_ack.start_cond = 1;
-  	pthread_mutex_unlock (&mutex);
-  }else if (lastMsg == "StopCond"){
-    pthread_mutex_lock (&mutex);
-  	flags_sensor.stop_cond = 1;
-  	flags_sensor_ack.stop_cond = 1;
-  	pthread_mutex_unlock (&mutex);
-  }else if (lastMsg == "ACK"){
-    pthread_mutex_lock (&mutex);
-  	flags_sensor.ack = 1;
-  	flags_sensor_ack.ack = 1;
-  	pthread_mutex_unlock (&mutex);
-  }else if (lastMsg == "XCK"){
-    pthread_mutex_lock (&mutex);
-  	flags_sensor.xck = 1;
-  	flags_sensor_ack.xck = 1;
-  	pthread_mutex_unlock (&mutex);
+  if (!strcmp(lastMsg,startcond)){
+    start_ack_isr();
+    start_isr();
+  }else if (!strcmp(lastMsg,stopcond)){
+    stop_ack_isr();
+    stop_isr();
+  }else if (!strcmp(lastMsg,ack)){
+    ack_ack_isr();
+    ack_isr();
+  }else if (!strcmp(lastMsg,xck)){
+    xck_ack_isr();
+    xck_isr();
   }else{
-    flags_sensor.bits_received = 1;
-    flags_sensor_ack.bits_received = 1;
+    bits_ack_isr();
+    bits_isr();
   }
+
+  return 0;
 
 }
