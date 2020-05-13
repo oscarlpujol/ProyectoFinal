@@ -19,13 +19,13 @@ button_onoff_interruption(){
     timeval_sub (&timeout, &next_activation, &now);
     select (0, NULL, NULL, NULL, &timeout) ;
 
-    if(kbhit() && getchar() == 32){
+    if(kbhit() && (getchar() == 32)){
       button_onoff_isr();
     }
   }
 }
 
-/*int kbhit(){
+int kbhit(){
   struct termios oldt, newt;
   int ch;
   int oldf;
@@ -49,4 +49,4 @@ button_onoff_interruption(){
   }
 
   return 0;
-}*/
+}

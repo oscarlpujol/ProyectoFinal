@@ -25,9 +25,9 @@
 
 // Variables
 
-#define CLK_MS 5
+#define CLK_MS 1
 #define TIME_ON 15
-#define TIME_MAQ 30000
+#define TIME_MAQ 20000
 #define OWN_ADDRESS "1234"
 #define SENSOR_ADDRESS "5000"
 #define SOCKETNUMBER 8888
@@ -39,12 +39,13 @@ typedef struct{
 	tmr_t* tmr_on;
 	char I2C_ADDRESS_IRIS[20]; // IRIS I2C address
 	char I2C_ADDRESS_SENSOR[20]; // SENSOR I2C address
-	int measures[6];
+	char measures[6][20];
 	int socket_desc;
-	char (*address);
+	char* address;
 	int length_next_msg;
 	int num_msg;
 	int num_sent;
+	char receiver[20];
 
 }TipoIris;
 
@@ -55,6 +56,7 @@ typedef struct{
 	unsigned int time_on : 1;
 	unsigned int initialized : 1;
 	unsigned int ack : 1;
+	unsigned int xck : 1;
 	unsigned int msg_IAQ_left : 1;
 	unsigned int MAQ_now : 1;
 	unsigned int timeout_MAQ : 1;
@@ -74,5 +76,13 @@ void *
 button_MAQnow_interruption();
 void
 button_MAQnow_isr();
+void
+ack_isr();
+void
+xck_isr();
+void
+bits_isr();
+void
+new_msg(char* msg);
 
 #endif /* _IRIS_H_ */
