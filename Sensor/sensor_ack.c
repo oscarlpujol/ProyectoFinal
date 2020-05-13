@@ -31,7 +31,7 @@ check_8_bits(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop_cond);
+	result = (jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop_cond && !jarvan.start_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -41,7 +41,7 @@ check_flag (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (!jarvan.bits_received && (jarvan.ack || jarvan.xck) && !jarvan.timeout && !jarvan.stop_cond);
+	result = (!jarvan.bits_received && (jarvan.ack || jarvan.xck || jarvan.start_cond) && !jarvan.timeout && !jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -75,6 +75,8 @@ begin (fsm_t* this)
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
 	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
+	printf("Begin\n");
+	fflush(stdout);
 
 	pthread_mutex_lock (&mutex);
 	jarvan.start_cond = 0;
@@ -87,7 +89,10 @@ send_ACK (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	char message[20] = "ACK\n";
+	printf("Ack enviado\n");
+	fflush(stdout);
+
+	char message[20] = "ACK";
 	write(p_sgp30->socket_desc,&message,20);
 
 	//tmr_startms((p_sgp30->tmr_timeout), TIMEOUT_TIME);
@@ -101,19 +106,31 @@ send_ACK (fsm_t* this)
 static void
 do_not_count (fsm_t* this)
 {
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	printf("Do not count\n");
+	fflush(stdout);
+
+	//tmr_startms((p_sgp30->tmr_timeout), TIMEOUT_TIME);
+
 	pthread_mutex_lock (&mutex);
 	jarvan.ack = 0;
 	jarvan.xck = 0;
+	jarvan.start_cond = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
 static void
 halt (fsm_t* this)
 {
+	printf("Halt\n");
+	fflush(stdout);
+
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 100*TIMEOUT_TIME); // Puede volver a encenderse otra vez?
+	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 1000*TIMEOUT_TIME); // Puede volver a encenderse otra vez?
 
 	pthread_mutex_lock (&mutex);
 	jarvan.stop_cond = 0;
@@ -127,7 +144,12 @@ send_XCK (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	char message[20] = "XCK\n";
+	printf("Xck enviado\n");
+	fflush(stdout);
+
+	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 1000*TIMEOUT_TIME);
+
+	char message[20] = "XCK";
 	write(p_sgp30->socket_desc,&message,20);
 
 	//tmr_destroy(&(p_sgp30->tmr_timeout)); // Puede volver a encenderse otra vez?
@@ -148,7 +170,7 @@ timeout_timer (union sigval value)
 {
 	pthread_mutex_lock (&mutex);
 	jarvan.timeout = 1;
-	jarvan_sensor.timeout = 1;
+	timeout_isr();
 	pthread_mutex_unlock (&mutex);
 
 	printf("TIMEOUT\n");
@@ -191,14 +213,13 @@ bits_ack_isr() {
 //Init
 
 int
-sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags, TipoFlags *flags_sensor)
+sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags)
 {
 	jarvan = *flags;
-	jarvan_sensor = *flags_sensor;
 	sgp30 = *p_sgp30;
 
-	p_sgp30->tmr_timeout = tmr_new (timeout_timer);
-	tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 20000*TIMEOUT_TIME);
+	//p_sgp30->tmr_timeout = tmr_new (timeout_timer);
+	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 1000*TIMEOUT_TIME);
 
 	pthread_mutex_init(&mutex, NULL);
 

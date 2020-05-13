@@ -26,8 +26,8 @@
 // Variables
 
 #define OWN_ADDRESS "5000"
-#define CLK_MS 5
-#define REALMEASURES_TIME 4000
+#define CLK_MS 1
+#define REALMEASURES_TIME 40000
 #define TIMEOUT_TIME 1000
 #define SEED 2
 #define SOCKETNUMBER 8888
@@ -66,6 +66,8 @@ typedef struct{
 	unsigned int TVOC_sent : 1;
 	unsigned int incorrect_command : 1;
 	unsigned int correct_command : 1;
+	unsigned int process1 : 1;
+	unsigned int process2 : 1;
 
 }TipoFlags;
 
@@ -91,5 +93,7 @@ void
 bits_isr();
 void
 new_msg(char* msg);
+void
+timeout_isr();
 
 #endif /* _SENSOR_H_ */

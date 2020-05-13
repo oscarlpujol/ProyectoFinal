@@ -8,10 +8,10 @@ static TipoFlags flags_sensor;
 static TipoFlags flags_sensor_ack;
 
 static char lastMsg[20];
-static char startcond[20] = "StartCond\n";
-static char stopcond[20] = "StopCond\n";
-static char ack[20] = "ACK\n";
-static char xck[20] = "XCK\n";
+static char startcond[20] = "StartCond";
+static char stopcond[20] = "StopCond";
+static char ack[20] = "ACK";
+static char xck[20] = "XCK";
 
 fsm_t* fsm_new_sensor ();
 fsm_t* fsm_new_sensor_ack ();
@@ -19,7 +19,7 @@ fsm_t* fsm_new_sensor_ack ();
 int observer();
 int socket_init();
 int sensor_init(TipoSensor* sensor, TipoFlags* flags);
-int sensor_ack_init(TipoSensor* sensor, TipoFlags* flags, TipoFlags* flags2);
+int sensor_ack_init(TipoSensor* sensor, TipoFlags* flags);
 
 void *
 total_sensor_control (void* ignore)
@@ -31,20 +31,7 @@ total_sensor_control (void* ignore)
 
   socket_init();
   sensor_init(&sgp30, &flags_sensor);
-  sensor_ack_init(&sgp30, &flags_sensor_ack,&flags_sensor);
-
-  /*char message[20];
-  int result;
-  result = read(sgp30.socket_desc, &message,20); // no lee nada, se queda esperando
-  char aux[20] = "hola\n";
-  if(strcmp(&message,&aux) == 0){
-  printf("He pasado\n");
-  fflush(stdout);
-}
-  printf("%s\n", &message);
-  fflush(stdout);
-  printf("%d\n", result);
-  fflush(stdout);*/
+  sensor_ack_init(&sgp30, &flags_sensor_ack);
 
   struct timeval next_activation;
   struct timeval now, timeout;
@@ -58,12 +45,12 @@ total_sensor_control (void* ignore)
     select (0, NULL, NULL, NULL, &timeout) ;
 
     fsm_fire (sensor_ack_fsm);
-    fsm_fire (sensor_fsm); // Se puede hacer así? o con dos procesos diferentes?
+    fsm_fire (sensor_fsm);
   }
 }
 
 void *
-socket_receive_observer(void* ignore) { //funcion que se encarga de activar los flags en funcion de lo que haya llegado
+socket_receive_observer(void* ignore) {
 
   struct timeval next_activation;
   struct timeval now, timeout;
@@ -128,8 +115,6 @@ int
 observer() {
   read(sgp30.socket_desc, &lastMsg, 20);
 
-  new_msg(&lastMsg);
-
   if (!strcmp(lastMsg,startcond)){
     start_ack_isr();
     start_isr();
@@ -143,6 +128,7 @@ observer() {
     xck_ack_isr();
     xck_isr();
   }else{
+    new_msg(&lastMsg);
     bits_ack_isr();
     bits_isr();
   }
