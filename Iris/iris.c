@@ -208,6 +208,11 @@ power_off(fsm_t* this)
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 100*TIME_MAQ);
 
+  pthread_mutex_lock(&mutex);
+  char message[20] = "PowerOff";
+  write(p_iris->socket_desc,&message,20);
+  pthread_mutex_unlock(&mutex);
+
   pthread_mutex_lock (&mutex);
   p_iris->state = 0;
   jarvan.initialized = 0;
