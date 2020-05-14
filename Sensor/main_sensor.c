@@ -18,6 +18,7 @@ int observer();
 int socket_init();
 int sensor_init(TipoSensor* sensor, TipoFlags* flags);
 int sensor_ack_init(TipoSensor* sensor, TipoFlags* flags);
+int ready (int fd);
 
 void *
 total_sensor_control (void* ignore)
@@ -42,26 +43,11 @@ total_sensor_control (void* ignore)
     timeval_sub (&timeout, &next_activation, &now);
     select (0, NULL, NULL, NULL, &timeout) ;
 
+    if(ready(sgp30.socket_desc)){
+        observer();
+    }
     fsm_fire (sensor_ack_fsm);
     fsm_fire (sensor_fsm);
-  }
-}
-
-void *
-socket_receive_observer(void* ignore) {
-
-  struct timeval next_activation;
-  struct timeval now, timeout;
-
-  gettimeofday (&next_activation, NULL);
-  while (1) {
-    struct timeval *period = task_get_period (pthread_self());
-    timeval_add (&next_activation, &next_activation, period);
-    gettimeofday (&now, NULL);
-    timeval_sub (&timeout, &next_activation, &now);
-    select (0, NULL, NULL, NULL, &timeout) ;
-
-    observer();
   }
 }
 
@@ -71,9 +57,7 @@ main (void)
   pthread_mutex_init(&mutex_socket, NULL);
 
   pthread_t tid1 = task_new ("sensor", total_sensor_control, CLK_MS, CLK_MS, 1, 2048);
-  pthread_t tid2 = task_new ("observer", socket_receive_observer, CLK_MS, CLK_MS, 1, 2048);
   pthread_join (tid1, NULL);
-  pthread_join (tid2, NULL);
   return 0;
 }
 
@@ -135,4 +119,16 @@ observer() {
 
   return 0;
 
+}
+
+int ready (int fd){
+  struct timeval timeout = {1,0};
+  fd_set rdset;
+  int res;
+
+  if ( fd < 0 ) return 0;
+  FD_ZERO(&rdset);
+  FD_SET(fd, &rdset);
+  res = select(fd+1, &rdset, NULL, NULL, &timeout);
+  return res > 0;
 }
