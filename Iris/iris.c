@@ -105,7 +105,7 @@ check_flag_ACK_not_msg_MAQ_left(fsm_t* this)
 }
 
 static int
-check_bits_received_and_not_msg_received(fsm_t* this)
+check_bits_received_and_not_all_msg_received(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
   int result = 0;
@@ -430,9 +430,9 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   printf("Se envia StopCond\n");
   fflush(stdout);
 
-  printf("CO2 = %s%s ppm\n", &p_iris->measures[0],&p_iris->measures[1]);
+  printf("CO2 = %s%s ppm\n", p_iris->measures[0],p_iris->measures[1]);
   fflush(stdout);
-  printf("TVOC = %s%s ppb\n", &p_iris->measures[3],&p_iris->measures[4]);
+  printf("TVOC = %s%s ppb\n", p_iris->measures[3],p_iris->measures[4]);
   fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
@@ -549,7 +549,7 @@ fsm_new_iris (/*int* validp, int pir, int alarm*/)
         {  IDLE, check_init_timeout_measure, MSG_MAQ, maq_start},
         {  MSG_MAQ, check_flag_ACK_msg_MAQ_left, MSG_MAQ, send_msg_2sensor},
         {  MSG_MAQ, check_flag_ACK_not_msg_MAQ_left, LISTEN, init_maq_success},
-        {  LISTEN, check_bits_received_and_not_msg_received, LISTEN, received_data_success},
+        {  LISTEN, check_bits_received_and_not_all_msg_received, LISTEN, received_data_success},
         {  LISTEN, check_all_msg_received_IRIS_not_msg_checked, CHECK_CRC, check_msg},
         {  CHECK_CRC, check_msg_checked, LISTEN, msg_checked_success},
         {  LISTEN, check_all_msg_received_and_checked, IDLE, send_XCK_2sensor_stop_show_results_maq},
