@@ -32,6 +32,8 @@
 #define SEED 2
 #define SOCKETNUMBER 8888
 
+static pthread_mutex_t mutex_socket;
+
 typedef struct{
 
 	unsigned int realmeasures : 1; // if 0 -> measures are not real, 400 standard; if 1 -> now you can read

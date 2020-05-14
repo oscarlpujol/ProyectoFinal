@@ -1,8 +1,6 @@
 
 #include "sensor.h"
 
-static pthread_mutex_t mutex;
-
 static TipoSensor sgp30;
 static TipoFlags flags_sensor;
 static TipoFlags flags_sensor_ack;
@@ -70,9 +68,9 @@ socket_receive_observer(void* ignore) {
 int
 main (void)
 {
-  pthread_mutex_init(&mutex, NULL);
+  pthread_mutex_init(&mutex_socket, NULL);
 
-  pthread_t tid1 = task_new ("sensor", total_sensor_control, CLK_MS, CLK_MS, 1, 2048);
+  pthread_t tid1 = task_new ("sensor", total_sensor_control, CLK_MS, CLK_MS, 2, 2048);
   pthread_t tid2 = task_new ("observer", socket_receive_observer, CLK_MS, CLK_MS, 1, 2048);
   pthread_join (tid1, NULL);
   pthread_join (tid2, NULL);
@@ -113,7 +111,9 @@ socket_init (){
 
 int
 observer() {
+  pthread_mutex_lock(&mutex_socket);
   read(sgp30.socket_desc, &lastMsg, 20);
+  pthread_mutex_unlock(&mutex_socket);
 
   if (!strcmp(lastMsg,startcond)){
     start_ack_isr();

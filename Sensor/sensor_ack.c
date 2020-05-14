@@ -51,7 +51,7 @@ check_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && jarvan.stop_cond);
+	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && !jarvan.timeout && jarvan.stop_cond && !jarvan.start_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -61,7 +61,7 @@ check_timeout (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && jarvan.timeout && !jarvan.stop_cond);
+	result = (!jarvan.bits_received && !(jarvan.ack || jarvan.xck) && jarvan.timeout && !jarvan.stop_cond && !jarvan.start_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -80,6 +80,7 @@ begin (fsm_t* this)
 
 	pthread_mutex_lock (&mutex);
 	jarvan.start_cond = 0;
+	jarvan.bits_received = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -93,7 +94,9 @@ send_ACK (fsm_t* this)
 	fflush(stdout);
 
 	char message[20] = "ACK";
+	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc,&message,20);
+	pthread_mutex_unlock(&mutex_socket);
 
 	//tmr_startms((p_sgp30->tmr_timeout), TIMEOUT_TIME);
 
@@ -150,7 +153,9 @@ send_XCK (fsm_t* this)
 	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 1000*TIMEOUT_TIME);
 
 	char message[20] = "XCK";
+	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc,&message,20);
+	pthread_mutex_unlock(&mutex_socket);
 
 	//tmr_destroy(&(p_sgp30->tmr_timeout)); // Puede volver a encenderse otra vez?
 

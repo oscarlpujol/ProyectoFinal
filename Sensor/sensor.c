@@ -137,7 +137,7 @@ check_XCK_and_notMAQ_and_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.xck && !jarvan.msg_MAQ_left && jarvan.stop_cond);
+	result = (/*jarvan.xck &&*/ !jarvan.msg_MAQ_left && jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -212,29 +212,42 @@ MAQ_received (fsm_t* this)
 
 	char CO2[20], TVOC[20];
 
-	char aux[20] = "400";
+	char aux0[20] = "04";
+	char aux1[20] = "00";
+	char CRC[20]= "0";
 
 	printf("\nMAQ command has been received\n");
 	fflush(stdout);
 
 	if((p_sgp30->realmeasures) == 0){
-		strcpy(p_sgp30->measures[0], aux);
-		strcpy(p_sgp30->measures[1], aux);
-		strcpy(p_sgp30->measures[3], aux);
-		strcpy(p_sgp30->measures[4], aux);
+		strcpy(p_sgp30->measures[0], aux0);
+		strcpy(p_sgp30->measures[1], aux1);
+		strcpy(p_sgp30->measures[2], CRC);
+		strcpy(p_sgp30->measures[3], aux0);
+		strcpy(p_sgp30->measures[4], aux1);
+		strcpy(p_sgp30->measures[5], CRC);
 	}
 	else{
 
-		char aux1 [20] = "45";
-		char aux2 [20] = "50";
+		int aux11_rand = rand() % 99;
+		int aux21_rand = rand() % 99;
+		int aux12_rand = rand() % 99;
+		int aux22_rand = rand() % 99;
+		char aux11 [20];
+		char aux21 [20];
+		char aux12 [20];
+		char aux22 [20];
+		sprintf(aux11, "%d", aux11_rand);
+		sprintf(aux21, "%d", aux21_rand);
+		sprintf(aux12, "%d", aux12_rand);
+		sprintf(aux22, "%d", aux22_rand);
 
-		strcpy(CO2,aux1);
-		strcpy(TVOC,aux2);
-
-		strcpy(p_sgp30->measures[0], CO2);
-		strcpy(p_sgp30->measures[1], CO2);
-		strcpy(p_sgp30->measures[3], TVOC);
-		strcpy(p_sgp30->measures[4], TVOC);
+		strcpy(p_sgp30->measures[0], aux11);
+		strcpy(p_sgp30->measures[1], aux12);
+		strcpy(p_sgp30->measures[2], CRC);
+		strcpy(p_sgp30->measures[3], aux21);
+		strcpy(p_sgp30->measures[4], aux22);
+		strcpy(p_sgp30->measures[5], CRC);
 	}
 
 	printf("CO2 vale %s \n", p_sgp30->measures[0]);
@@ -242,10 +255,9 @@ MAQ_received (fsm_t* this)
 	fflush(stdout);
 
 	char message[20] = "ACK";
+	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc,&message,20);
-
-	printf("Ack enviado\n");
-	fflush(stdout);
+	pthread_mutex_unlock(&mutex_socket);
 
 	pthread_mutex_lock (&mutex);
 	jarvan.MAQ = 0;
@@ -280,16 +292,16 @@ send_msg_2IRIS (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("mensaje numero %d enviado\n", p_sgp30->address);
-	fflush(stdout);
 
 	char measure[20]; strcpy(measure,(p_sgp30->measures[(p_sgp30->address)]));
-	printf("Se envia %s\n", &measure);
+	printf("\nSe envia %s\n", &measure);
 	fflush(stdout);
+	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc, &measure,20);
+	pthread_mutex_unlock(&mutex_socket);
 	p_sgp30->address += 1;
 
-	if(p_sgp30->address == 2){
+	/*if(p_sgp30->address == 2){
 		pthread_mutex_lock (&mutex);
 		jarvan.CO2_sent = 1;
 		pthread_mutex_unlock (&mutex);
@@ -299,31 +311,32 @@ send_msg_2IRIS (fsm_t* this)
 		pthread_mutex_lock (&mutex);
 		jarvan.TVOC_sent = 1;
 		pthread_mutex_unlock (&mutex);
+	}*/
+
+	if(p_sgp30->address == 6){
+		pthread_mutex_lock (&mutex);
+		jarvan.msg_MAQ_left = 0;
+		pthread_mutex_unlock (&mutex);
 	}
 
 	pthread_mutex_lock (&mutex);
 	jarvan.ack = 0;
-	jarvan.msg_MAQ_left = 1;
 	pthread_mutex_unlock (&mutex);
 }
 
-static void
+/*static void
 calculate_sent_CRC (fsm_t* this)
 {
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("mensaje numero %d enviado\n", p_sgp30->address);
-	fflush(stdout);
-
 	char CRC[20]= "0";//calculate_CRC((int)p_sgp30->measures[(p_sgp30->address) -2], (int)p_sgp30->measures[(p_sgp30->address)-1]);
 	strcpy(p_sgp30->measures[(p_sgp30->address)],CRC);
 
 	char measure[20]; strcpy(measure,(p_sgp30->measures[(p_sgp30->address)]));
-	printf("Se envia %s\n", &measure);
+	printf("\nSe envia %s\n", &measure);
 	fflush(stdout);
 	write(p_sgp30->socket_desc,&measure,20);
-	p_sgp30->address += 1;
 
 	if(p_sgp30->address == 6){
 		pthread_mutex_lock (&mutex);
@@ -337,7 +350,7 @@ calculate_sent_CRC (fsm_t* this)
 	jarvan.TVOC_sent = 0;
 	jarvan.CO2_sent = 0;
 	pthread_mutex_unlock (&mutex);
-}
+}*/
 
 static void
 MAQ_success (fsm_t* this)
@@ -364,7 +377,9 @@ wrong_command(fsm_t* this)
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
 	char message[20] = "XCK";
+	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc,&message,20);
+	pthread_mutex_unlock(&mutex_socket);
 	printf("Command not recognised\n");
 
 	pthread_mutex_lock (&mutex);
@@ -544,7 +559,7 @@ fsm_new_sensor ()
         //{  WAIT_16BITS, check_MRS, MRS, MRS_received},
         {  MAQ, check_start_and_bits, MSG_MAQ, I2C_address_received},
         {  MSG_MAQ, check_ACK_and_MAQ_left_and_not_TVOC_or_CO2, MSG_MAQ, send_msg_2IRIS},
-        {  MSG_MAQ, check_C02_or_TVOC_sent_msg_MAQ, MSG_MAQ, calculate_sent_CRC},
+        //{  MSG_MAQ, check_C02_or_TVOC_sent_msg_MAQ, MSG_MAQ, calculate_sent_CRC},
         {  MSG_MAQ, check_XCK_and_notMAQ_and_stop, IDLE, MAQ_success},
         /*	MRS message send
         {  MRS, check_start_and_bits, MSG_MRS, I2C_address_received},
