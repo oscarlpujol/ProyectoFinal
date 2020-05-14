@@ -70,7 +70,7 @@ main (void)
 {
   pthread_mutex_init(&mutex_socket, NULL);
 
-  pthread_t tid1 = task_new ("sensor", total_sensor_control, CLK_MS, CLK_MS, 2, 2048);
+  pthread_t tid1 = task_new ("sensor", total_sensor_control, CLK_MS, CLK_MS, 1, 2048);
   pthread_t tid2 = task_new ("observer", socket_receive_observer, CLK_MS, CLK_MS, 1, 2048);
   pthread_join (tid1, NULL);
   pthread_join (tid2, NULL);

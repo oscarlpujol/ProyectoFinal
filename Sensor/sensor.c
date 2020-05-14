@@ -113,21 +113,11 @@ check_MAQ (fsm_t* this)
 }
 
 static int
-check_ACK_and_MAQ_left_and_not_TVOC_or_CO2 (fsm_t* this)
+check_ACK_and_MAQ_left (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.ack && jarvan.msg_MAQ_left && !(jarvan.TVOC_sent || jarvan.CO2_sent));
-	pthread_mutex_unlock (&mutex);
-	return result;
-}
-
-static int
-check_C02_or_TVOC_sent_msg_MAQ (fsm_t* this)
-{
-	pthread_mutex_lock (&mutex);
-	int result = 0;
-	result = ((jarvan.CO2_sent || jarvan.TVOC_sent) && jarvan.msg_MAQ_left);
+	result = (jarvan.ack && jarvan.msg_MAQ_left);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -137,7 +127,7 @@ check_XCK_and_notMAQ_and_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (/*jarvan.xck &&*/ !jarvan.msg_MAQ_left && jarvan.stop_cond);
+	result = (!jarvan.msg_MAQ_left && jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -250,8 +240,8 @@ MAQ_received (fsm_t* this)
 		strcpy(p_sgp30->measures[5], CRC);
 	}
 
-	printf("CO2 vale %s \n", p_sgp30->measures[0]);
-	printf("TVOC vale %s\n", p_sgp30->measures[3]);
+	printf("CO2 vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
+	printf("TVOC vale %s%s \n", p_sgp30->measures[3], p_sgp30->measures[4]);
 	fflush(stdout);
 
 	char message[20] = "ACK";
@@ -292,26 +282,13 @@ send_msg_2IRIS (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-
 	char measure[20]; strcpy(measure,(p_sgp30->measures[(p_sgp30->address)]));
-	printf("\nSe envia %s\n", &measure);
+	printf("\nSe envia %s\n", measure);
 	fflush(stdout);
 	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc, &measure,20);
 	pthread_mutex_unlock(&mutex_socket);
 	p_sgp30->address += 1;
-
-	/*if(p_sgp30->address == 2){
-		pthread_mutex_lock (&mutex);
-		jarvan.CO2_sent = 1;
-		pthread_mutex_unlock (&mutex);
-	}
-
-	if(p_sgp30->address == 5){
-		pthread_mutex_lock (&mutex);
-		jarvan.TVOC_sent = 1;
-		pthread_mutex_unlock (&mutex);
-	}*/
 
 	if(p_sgp30->address == 6){
 		pthread_mutex_lock (&mutex);
@@ -323,34 +300,6 @@ send_msg_2IRIS (fsm_t* this)
 	jarvan.ack = 0;
 	pthread_mutex_unlock (&mutex);
 }
-
-/*static void
-calculate_sent_CRC (fsm_t* this)
-{
-	TipoSensor *p_sgp30;
-	p_sgp30 = (TipoSensor*)(this->user_data);
-
-	char CRC[20]= "0";//calculate_CRC((int)p_sgp30->measures[(p_sgp30->address) -2], (int)p_sgp30->measures[(p_sgp30->address)-1]);
-	strcpy(p_sgp30->measures[(p_sgp30->address)],CRC);
-
-	char measure[20]; strcpy(measure,(p_sgp30->measures[(p_sgp30->address)]));
-	printf("\nSe envia %s\n", &measure);
-	fflush(stdout);
-	write(p_sgp30->socket_desc,&measure,20);
-
-	if(p_sgp30->address == 6){
-		pthread_mutex_lock (&mutex);
-		jarvan.msg_MAQ_left = 0;
-		jarvan.CO2_sent = 0;
-		jarvan.TVOC_sent = 0;
-		pthread_mutex_unlock (&mutex);
-	}
-
-	pthread_mutex_lock (&mutex);
-	jarvan.TVOC_sent = 0;
-	jarvan.CO2_sent = 0;
-	pthread_mutex_unlock (&mutex);
-}*/
 
 static void
 MAQ_success (fsm_t* this)
@@ -406,7 +355,7 @@ process_bits_1 (fsm_t* this)
 
 	char aux[20] = "20";
 
-	printf("El primer cond vale %s\n", &p_sgp30->receiver);
+	printf("El primer cond vale %s\n", p_sgp30->receiver);
 	fflush(stdout);
 
 	if(!strcmp((p_sgp30->receiver),aux)){
@@ -432,7 +381,7 @@ process_bits_2 (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("El segundo cond vale %s\n", &p_sgp30->receiver);
+	printf("El segundo cond vale %s\n", p_sgp30->receiver);
 	fflush(stdout);
 
 	char aux1[20] = "03";
@@ -558,8 +507,7 @@ fsm_new_sensor ()
         {  WAIT_8BITS_2, check_MAQ, MAQ, MAQ_received},
         //{  WAIT_16BITS, check_MRS, MRS, MRS_received},
         {  MAQ, check_start_and_bits, MSG_MAQ, I2C_address_received},
-        {  MSG_MAQ, check_ACK_and_MAQ_left_and_not_TVOC_or_CO2, MSG_MAQ, send_msg_2IRIS},
-        //{  MSG_MAQ, check_C02_or_TVOC_sent_msg_MAQ, MSG_MAQ, calculate_sent_CRC},
+        {  MSG_MAQ, check_ACK_and_MAQ_left, MSG_MAQ, send_msg_2IRIS},
         {  MSG_MAQ, check_XCK_and_notMAQ_and_stop, IDLE, MAQ_success},
         /*	MRS message send
         {  MRS, check_start_and_bits, MSG_MRS, I2C_address_received},

@@ -64,8 +64,6 @@ typedef struct{
 	//unsigned int ethanol_sent : 1;
 	unsigned int MAQ : 1;
 	unsigned int msg_MAQ_left : 1; // 1 messages left, 0 not messages left
-	unsigned int CO2_sent : 1;
-	unsigned int TVOC_sent : 1;
 	unsigned int incorrect_command : 1;
 	unsigned int correct_command : 1;
 	unsigned int process1 : 1;
