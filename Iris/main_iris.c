@@ -44,12 +44,14 @@ total_iris_control (void* ignore)
 int
 main ()
 {
-    pthread_t tid1 = task_new ("iris", total_iris_control, CLK_MS, CLK_MS, 1, 2048);
-    pthread_t tid2 = task_new ("button_onoff", button_onoff_interruption, CLK_MS, CLK_MS, 2, 2048);
+    pthread_t tid1 = task_new ("iris", total_iris_control, CLK_MS, CLK_MS, 2, 2048);
+    pthread_t tid2 = task_new ("button_onoff", button_onoff_interruption, CLK_MS, CLK_MS, 1, 2048);
     pthread_t tid3 = task_new ("button_MAQnow", button_MAQnow_interruption, CLK_MS, CLK_MS, 1, 2048);
+    pthread_t tid4 = task_new ("button_MRSnow", button_MRSnow_interruption, CLK_MS, CLK_MS, 1, 2048);
     pthread_join (tid1, NULL);
     pthread_join (tid2, NULL);
     pthread_join (tid3, NULL);
+    pthread_join (tid4, NULL);
     return 0;
 }
 

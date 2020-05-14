@@ -59,8 +59,10 @@ typedef struct{
 	unsigned int xck : 1;
 	unsigned int msg_IAQ_left : 1;
 	unsigned int MAQ_now : 1;
+	unsigned int MRS_now : 1;
 	unsigned int timeout_MAQ : 1;
 	unsigned int msg_MAQ_left : 1;
+	unsigned int msg_MRS_left : 1;
 	unsigned int bits_received : 1;
 	unsigned int msg_checked : 1;
 	unsigned int all_msg_received : 1;
@@ -76,6 +78,10 @@ void *
 button_MAQnow_interruption();
 void
 button_MAQnow_isr();
+void *
+button_MRSnow_interruption();
+void
+button_MRSnow_isr();
 void
 ack_isr();
 void

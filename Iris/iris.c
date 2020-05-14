@@ -12,14 +12,18 @@ int calculate_CRC(int numberone, int numbertwo);
 
 static char iaq_message[3][20] = {"5000","20","03"};
 static char maq_message[5][20] = {"5000", "20", "08", "StartCond", "1234"};
+static char mrs_message[5][20] = {"5000", "20", "50", "StartCond", "1234"};
 
 enum states {
   SLEEP, // initial state
   IDLE,
 	MSG_IAQ,
 	MSG_MAQ,
-  LISTEN,
-	CHECK_CRC
+  MSG_MRS,
+  LISTEN_MAQ,
+  LISTEN_MRS,
+	CHECK_CRC_MAQ,
+  CHECK_CRC_MRS
 };
 
 // Int
@@ -85,6 +89,16 @@ check_init_timeout_measure(fsm_t* this)
 }
 
 static int
+check_init_measure_mrs(fsm_t* this)
+{
+  pthread_mutex_lock (&mutex);
+  int result = 0;
+  result = (jarvan.initialized && jarvan.MRS_now);
+  pthread_mutex_unlock (&mutex);
+  return result;
+}
+
+static int
 check_flag_ACK_msg_MAQ_left(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
@@ -95,11 +109,31 @@ check_flag_ACK_msg_MAQ_left(fsm_t* this)
 }
 
 static int
+check_flag_ACK_msg_MRS_left(fsm_t* this)
+{
+  pthread_mutex_lock (&mutex);
+  int result = 0;
+  result = (jarvan.ack && !jarvan.msg_MRS_left);
+  pthread_mutex_unlock (&mutex);
+  return result;
+}
+
+static int
 check_flag_ACK_not_msg_MAQ_left(fsm_t* this)
 {
   pthread_mutex_lock (&mutex);
   int result = 0;
   result = (jarvan.ack && jarvan.msg_MAQ_left);
+  pthread_mutex_unlock (&mutex);
+  return result;
+}
+
+static int
+check_flag_ACK_not_msg_MRS_left(fsm_t* this)
+{
+  pthread_mutex_lock (&mutex);
+  int result = 0;
+  result = (jarvan.ack && jarvan.msg_MRS_left);
   pthread_mutex_unlock (&mutex);
   return result;
 }
@@ -265,6 +299,35 @@ maq_start(fsm_t* this)
 }
 
 static void
+mrs_start(fsm_t* this)
+{
+  TipoIris *p_iris;
+  p_iris = (TipoIris*)(this->user_data);
+
+  printf("\nSending MRS command\n");
+	fflush(stdout);
+
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 1000*TIME_MAQ);
+
+  p_iris->address = &(mrs_message[0][0]);
+  p_iris->length_next_msg = 5;
+  p_iris->num_sent = 0;
+
+  pthread_mutex_lock (&mutex);
+  char message[20] = "StartCond";
+  write(p_iris->socket_desc,&(message),20);
+  pthread_mutex_unlock (&mutex);
+
+  printf("Se envia StartCond\n");
+  fflush(stdout);
+
+  pthread_mutex_lock (&mutex);
+  jarvan.MRS_now = 0;
+  jarvan.ack = 1; //mandatory to enter un sending loop in MSG_MAQ
+	pthread_mutex_unlock (&mutex);
+}
+
+static void
 send_msg_2sensor(fsm_t* this)
 {
   TipoIris *p_iris;
@@ -289,18 +352,16 @@ send_msg_2sensor(fsm_t* this)
       pthread_mutex_lock (&mutex);
       jarvan.msg_MAQ_left = 1;
     	pthread_mutex_unlock (&mutex);
+    }else if(this->current_state == MSG_MRS){
+      pthread_mutex_lock (&mutex);
+      jarvan.msg_MRS_left = 1;
+    	pthread_mutex_unlock (&mutex);
     }
   }
 
-  /*if (this->current_state == MSG_MAQ && p_iris->num_sent == 4) {
-    pthread_mutex_lock (&mutex);
-    jarvan.ack = 1;
-  	pthread_mutex_unlock (&mutex);
-  }else{*/
-    pthread_mutex_lock (&mutex);
-    jarvan.ack = 0;
-  	pthread_mutex_unlock (&mutex);
-  //}
+  pthread_mutex_lock (&mutex);
+  jarvan.ack = 0;
+  pthread_mutex_unlock (&mutex);
 
 }
 
@@ -310,10 +371,6 @@ init_maq_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  /*char message[20] = "StartCond\n";
-  write(p_iris->socket_desc,&(message),20);
-  write(p_iris->socket_desc,&maq_message2,20);*/
-
   printf("\nMAQ command sent, waiting measures\n");
 	fflush(stdout);
 
@@ -321,6 +378,23 @@ init_maq_success(fsm_t* this)
 
   pthread_mutex_lock (&mutex);
 	jarvan.msg_MAQ_left = 0;
+  jarvan.ack = 0;
+	pthread_mutex_unlock (&mutex);
+}
+
+static void
+init_mrs_success(fsm_t* this)
+{
+  TipoIris *p_iris;
+  p_iris = (TipoIris*)(this->user_data);
+
+  printf("\nMRS command sent, waiting measures\n");
+	fflush(stdout);
+
+  p_iris->num_msg = 0;
+
+  pthread_mutex_lock (&mutex);
+	jarvan.msg_MRS_left = 0;
   jarvan.ack = 0;
 	pthread_mutex_unlock (&mutex);
 }
@@ -396,16 +470,6 @@ msg_checked_success(fsm_t* this)
     printf("\nMSG checked...incorrect\n");
   	fflush(stdout);
   }
-
-  /*if(p_iris->num_msg == 6){
-    pthread_mutex_lock (&mutex);
-    jarvan.all_msg_received = 1;
-  	pthread_mutex_unlock (&mutex);
-  }*/
-
-  /*pthread_mutex_lock (&mutex);
-  jarvan.msg_checked = 0;
-	pthread_mutex_unlock (&mutex);*/
 }
 
 static void
@@ -413,14 +477,6 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
 {
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
-
-  /*pthread_mutex_lock (&mutex);
-  char message[20]= "XCK";
-  write(p_iris->socket_desc,&message,20);
-  pthread_mutex_unlock (&mutex);
-
-  printf("Se envia XCK\n");
-  fflush(stdout);*/
 
   pthread_mutex_lock(&mutex);
   char message2[20] = "StopCond";
@@ -442,6 +498,34 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   jarvan.msg_checked = 0;
 	pthread_mutex_unlock (&mutex);
 }
+
+static void
+send_XCK_2sensor_stop_show_results_mrs(fsm_t* this)
+{
+  TipoIris *p_iris;
+  p_iris = (TipoIris*)(this->user_data);
+
+  pthread_mutex_lock(&mutex);
+  char message2[20] = "StopCond";
+  write(p_iris->socket_desc,&message2,20);
+  pthread_mutex_unlock(&mutex);
+
+  printf("Se envia StopCond\n");
+  fflush(stdout);
+
+  printf("H2 = %s%s ppm\n", p_iris->measures[0],p_iris->measures[1]);
+  fflush(stdout);
+  printf("Ethanol = %s%s ppm\n", p_iris->measures[3],p_iris->measures[4]);
+  fflush(stdout);
+
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
+
+  pthread_mutex_lock (&mutex);
+  jarvan.all_msg_received = 0;
+  jarvan.msg_checked = 0;
+	pthread_mutex_unlock (&mutex);
+}
+
 
 //ISR
 
@@ -479,6 +563,13 @@ void
 button_MAQnow_isr() {
   pthread_mutex_lock (&mutex);
   jarvan.MAQ_now = 1;
+  pthread_mutex_unlock (&mutex);
+}
+
+void
+button_MRSnow_isr() {
+  pthread_mutex_lock (&mutex);
+  jarvan.MRS_now = 1;
   pthread_mutex_unlock (&mutex);
 }
 
@@ -547,12 +638,19 @@ fsm_new_iris (/*int* validp, int pir, int alarm*/)
         {  MSG_IAQ, check_flag_ACK_not_msg_IAQ, IDLE, iaq_success},
         {  MSG_IAQ, check_flag_ACK_msg_IAQ, MSG_IAQ, send_msg_2sensor},
         {  IDLE, check_init_timeout_measure, MSG_MAQ, maq_start},
+        {  IDLE, check_init_measure_mrs, MSG_MRS, mrs_start},
         {  MSG_MAQ, check_flag_ACK_msg_MAQ_left, MSG_MAQ, send_msg_2sensor},
-        {  MSG_MAQ, check_flag_ACK_not_msg_MAQ_left, LISTEN, init_maq_success},
-        {  LISTEN, check_bits_received_and_not_all_msg_received, LISTEN, received_data_success},
-        {  LISTEN, check_all_msg_received_IRIS_not_msg_checked, CHECK_CRC, check_msg},
-        {  CHECK_CRC, check_msg_checked, LISTEN, msg_checked_success},
-        {  LISTEN, check_all_msg_received_and_checked, IDLE, send_XCK_2sensor_stop_show_results_maq},
+        {  MSG_MRS, check_flag_ACK_msg_MRS_left, MSG_MRS, send_msg_2sensor},
+        {  MSG_MAQ, check_flag_ACK_not_msg_MAQ_left, LISTEN_MAQ, init_maq_success},
+        {  MSG_MRS, check_flag_ACK_not_msg_MRS_left, LISTEN_MRS, init_mrs_success},
+        {  LISTEN_MAQ, check_bits_received_and_not_all_msg_received, LISTEN_MAQ, received_data_success},
+        {  LISTEN_MRS, check_bits_received_and_not_all_msg_received, LISTEN_MRS, received_data_success},
+        {  LISTEN_MAQ, check_all_msg_received_IRIS_not_msg_checked, CHECK_CRC_MAQ, check_msg},
+        {  LISTEN_MRS, check_all_msg_received_IRIS_not_msg_checked, CHECK_CRC_MRS, check_msg},
+        {  CHECK_CRC_MAQ, check_msg_checked, LISTEN_MAQ, msg_checked_success},
+        {  CHECK_CRC_MRS, check_msg_checked, LISTEN_MRS, msg_checked_success},
+        {  LISTEN_MAQ, check_all_msg_received_and_checked, IDLE, send_XCK_2sensor_stop_show_results_maq},
+        {  LISTEN_MRS, check_all_msg_received_and_checked, IDLE, send_XCK_2sensor_stop_show_results_mrs},
         { -1, NULL, -1, NULL },
     };
 
