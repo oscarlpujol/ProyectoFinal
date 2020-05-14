@@ -65,24 +65,25 @@ socket_receive_observer(void* ignore) { //funcion que se encarga de activar los 
 int
 main ()
 {
-    pthread_t tid1 = task_new ("iris", total_iris_control, CLK_MS, CLK_MS, 2, 2048);
-    pthread_t tid2 = task_new ("button_onoff", button_onoff_interruption, CLK_MS, CLK_MS, 1, 2048);
-    //pthread_t tid3 = task_new ("button_MAQnow", button_MAQnow_interruption, CLK_MS, CLK_MS, 1, 2048);
-    pthread_t tid4 = task_new ("observer", socket_receive_observer, CLK_MS, CLK_MS, 2, 2048);
+    pthread_t tid1 = task_new ("iris", total_iris_control, CLK_MS, CLK_MS, 1, 2048);
+    pthread_t tid2 = task_new ("button_onoff", button_onoff_interruption, CLK_MS, CLK_MS, 2, 2048);
+    pthread_t tid3 = task_new ("button_MAQnow", button_MAQnow_interruption, CLK_MS, CLK_MS, 1, 2048);
+    pthread_t tid4 = task_new ("observer", socket_receive_observer, CLK_MS, CLK_MS, 1, 2048);
     pthread_join (tid1, NULL);
     pthread_join (tid2, NULL);
-    //pthread_join (tid3, NULL);
+    pthread_join (tid3, NULL);
     pthread_join (tid4, NULL);
     return 0;
 }
 
 int
 socket_init (){
-  int socket_desc , new_socket , c;
+  int socket_desc , new_socket, c;
 	struct sockaddr_in server , client;
 
 	//Create socket
 	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+
 	if (socket_desc == -1)
 	{
 		printf("Could not create socket");
@@ -123,6 +124,7 @@ socket_init (){
 
 int
 observer() {
+  memset(lastMsg, 0, sizeof(lastMsg));
   read(iris.socket_desc, &lastMsg, 20);
 
   if (!strcmp(lastMsg,ack)){
@@ -136,4 +138,30 @@ observer() {
 
   return 0;
 
+}
+
+int kbhit(){
+  struct termios oldt, newt;
+  int ch;
+  int oldf;
+
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+  ch = getchar();
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+  if(ch != EOF)
+  {
+    ungetc(ch, stdin);
+    return 1;
+  }
+
+  return 0;
 }

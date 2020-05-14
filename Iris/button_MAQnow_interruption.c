@@ -2,9 +2,6 @@
 
 #include "iris.h"
 
-int
-kbhit();
-
 void *
 button_MAQnow_interruption(){
 
@@ -19,9 +16,8 @@ button_MAQnow_interruption(){
     timeval_sub (&timeout, &next_activation, &now);
     select (0, NULL, NULL, NULL, &timeout) ;
 
-    if(kbhit() && (getchar() == 109)){
+    if(kbhit() && getchar() == 'm'){
       button_MAQnow_isr();
-      printf("He pulsado la tecla\n");
     }
   }
 }

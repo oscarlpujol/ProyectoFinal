@@ -84,5 +84,7 @@ void
 bits_isr();
 void
 new_msg(char* msg);
+int
+kbhit();
 
 #endif /* _IRIS_H_ */

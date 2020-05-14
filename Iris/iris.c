@@ -172,8 +172,11 @@ power_off(fsm_t* this)
   printf("\nShutting off sensor\n");
 	fflush(stdout);
 
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 100*TIME_MAQ);
+
   pthread_mutex_lock (&mutex);
   p_iris->state = 0;
+  jarvan.initialized = 0;
 	jarvan.button_off = 0;
 	pthread_mutex_unlock (&mutex);
 }
@@ -188,14 +191,16 @@ iaq_start(fsm_t* this)
 	fflush(stdout);
 
   p_iris->address = &(iaq_message[0][0]);
-  p_iris->length_next_msg = (sizeof(iaq_message) / sizeof(iaq_message[0]));
+  p_iris->length_next_msg = 3;
+  p_iris->num_sent = 0;
 
+  pthread_mutex_lock(&mutex);
   char message[20] = "StartCond";
   write(p_iris->socket_desc,&message,20);
+  pthread_mutex_unlock(&mutex);
 
-  /*printf("%s\n", &message);
-  printf("%s\n", (p_iris->address));
-  fflush(stdout);*/
+  printf("Se envia StartCond\n");
+  fflush(stdout);
 
   pthread_mutex_lock (&mutex);
 	jarvan.time_on = 0;
@@ -212,10 +217,13 @@ iaq_success(fsm_t* this)
   printf("\nIAQ success\n");
 	fflush(stdout);
 
-  p_iris->num_sent = 0;
-
+  pthread_mutex_lock (&mutex);
   char message[20] = "StopCond";
   write(p_iris->socket_desc,&message,20);
+  pthread_mutex_unlock (&mutex);
+
+  printf("Se envia StopCond\n");
+  fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
 
@@ -235,11 +243,19 @@ maq_start(fsm_t* this)
   printf("\nSending MAQ command\n");
 	fflush(stdout);
 
-  p_iris->address = &(maq_message[0][0]);
-  p_iris->length_next_msg = (sizeof(maq_message) / sizeof(maq_message[0]));
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 1000*TIME_MAQ);
 
+  p_iris->address = &(maq_message[0][0]);
+  p_iris->length_next_msg = 5;
+  p_iris->num_sent = 0;
+
+  pthread_mutex_lock (&mutex);
   char message[20] = "StartCond";
   write(p_iris->socket_desc,&(message),20);
+  pthread_mutex_unlock (&mutex);
+
+  printf("Se envia StartCond\n");
+  fflush(stdout);
 
   pthread_mutex_lock (&mutex);
 	jarvan.timeout_MAQ = 0;
@@ -254,27 +270,38 @@ send_msg_2sensor(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
+  pthread_mutex_lock (&mutex);
   write(p_iris->socket_desc,(p_iris->address),20);
-  printf("%s\n",(p_iris->address));
+  pthread_mutex_unlock (&mutex);
+
+  printf("Se envia %s\n",(p_iris->address));
   fflush(stdout);
+
   p_iris->address += 20;
   p_iris->num_sent += 1;
 
-  if((p_iris->num_sent) == (p_iris->length_next_msg)){
+  if((p_iris->num_sent) >= (p_iris->length_next_msg)){
     if(this->current_state == MSG_IAQ){
       pthread_mutex_lock (&mutex);
       jarvan.msg_IAQ_left = 1;
     	pthread_mutex_unlock (&mutex);
-    }else{ //current state is MSG_MAQ
+    }else if(this->current_state == MSG_MAQ){
       pthread_mutex_lock (&mutex);
       jarvan.msg_MAQ_left = 1;
     	pthread_mutex_unlock (&mutex);
     }
   }
 
-  pthread_mutex_lock (&mutex);
-  jarvan.ack = 0;
-	pthread_mutex_unlock (&mutex);
+  /*if (this->current_state == MSG_MAQ && p_iris->num_sent == 4) {
+    pthread_mutex_lock (&mutex);
+    jarvan.ack = 1;
+  	pthread_mutex_unlock (&mutex);
+  }else{*/
+    pthread_mutex_lock (&mutex);
+    jarvan.ack = 0;
+  	pthread_mutex_unlock (&mutex);
+  //}
+
 }
 
 static void
@@ -283,14 +310,14 @@ init_maq_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  p_iris->num_msg = 0;
-
   /*char message[20] = "StartCond\n";
   write(p_iris->socket_desc,&(message),20);
   write(p_iris->socket_desc,&maq_message2,20);*/
 
   printf("\nMAQ command sent, waiting measures\n");
 	fflush(stdout);
+
+  p_iris->num_msg = 0;
 
   pthread_mutex_lock (&mutex);
 	jarvan.msg_MAQ_left = 0;
@@ -313,15 +340,23 @@ received_data_success(fsm_t* this)
 
   p_iris->num_msg += 1;
 
+  printf("Recibido numero %d\n",p_iris->num_msg);
+  fflush(stdout);
+
   /*if(((p_iris->num_msg) == 3) || ((p_iris->num_msg) == 6)){
     pthread_mutex_lock (&mutex);
   	jarvan.msg_received = 1;
   	pthread_mutex_unlock (&mutex);
   }*/
 
-  if((p_iris->num_msg) <= 5){
+  if(p_iris->num_msg <= 5){
+    pthread_mutex_lock (&mutex);
     char message[20] = "ACK";
     write(p_iris->socket_desc,&message,20);
+    pthread_mutex_unlock (&mutex);
+
+    printf("Se envia ACK\n");
+    fflush(stdout);
   }
 
   if(p_iris->num_msg == 6){
@@ -379,16 +414,26 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
+  /*pthread_mutex_lock (&mutex);
   char message[20]= "XCK";
   write(p_iris->socket_desc,&message,20);
+  pthread_mutex_unlock (&mutex);
 
-  printf("CO2 = %s and %s \n", &p_iris->measures[0],&p_iris->measures[1]);
-  fflush(stdout);
-  printf("TVOC = %s and %s \n", &p_iris->measures[3],&p_iris->measures[4]);
-  fflush(stdout);
+  printf("Se envia XCK\n");
+  fflush(stdout);*/
 
+  pthread_mutex_lock(&mutex);
   char message2[20] = "StopCond";
   write(p_iris->socket_desc,&message2,20);
+  pthread_mutex_unlock(&mutex);
+
+  printf("Se envia StopCond\n");
+  fflush(stdout);
+
+  printf("CO2 = %s%s ppm\n", &p_iris->measures[0],&p_iris->measures[1]);
+  fflush(stdout);
+  printf("TVOC = %s%s ppb\n", &p_iris->measures[3],&p_iris->measures[4]);
+  fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
 
@@ -406,7 +451,7 @@ initial_timer (union sigval value){
 	pthread_mutex_lock (&mutex);
 	jarvan.time_on = 1;
 	pthread_mutex_unlock (&mutex);
-  tmr_destroy(iris.tmr_on);
+  tmr_startms((tmr_t*)(iris.tmr_on), 10000*TIME_ON);
 }
 
 static void
