@@ -522,11 +522,9 @@ Interruption functions
 
 static void
 initial_timer (union sigval value){
-
 	pthread_mutex_lock (&mutex);
 	sgp30.realmeasures  = 1;
 	pthread_mutex_unlock (&mutex);
-	tmr_destroy(sgp30.tmr_real_measures);
 }
 
 void
@@ -573,6 +571,13 @@ void
 timeout_isr(){
 	pthread_mutex_lock (&mutex);
 	jarvan.timeout = 1;
+	pthread_mutex_unlock (&mutex);
+}
+
+void
+powerOff_isr(){
+	pthread_mutex_lock (&mutex);
+	sgp30.realmeasures = 0;
 	pthread_mutex_unlock (&mutex);
 }
 

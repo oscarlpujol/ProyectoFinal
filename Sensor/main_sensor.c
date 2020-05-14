@@ -10,6 +10,7 @@ static char startcond[20] = "StartCond";
 static char stopcond[20] = "StopCond";
 static char ack[20] = "ACK";
 static char xck[20] = "XCK";
+static char powerOff[20] = "PowerOff";
 
 fsm_t* fsm_new_sensor ();
 fsm_t* fsm_new_sensor_ack ();
@@ -111,6 +112,8 @@ observer() {
   }else if (!strcmp(lastMsg,xck)){
     xck_ack_isr();
     xck_isr();
+  }else if (!strcmp(lastMsg,powerOff)){
+    powerOff_isr();
   }else{
     new_msg(&lastMsg);
     bits_ack_isr();

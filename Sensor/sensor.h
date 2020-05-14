@@ -93,5 +93,7 @@ void
 new_msg(char* msg);
 void
 timeout_isr();
+void
+powerOff_isr();
 
 #endif /* _SENSOR_H_ */
