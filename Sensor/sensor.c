@@ -15,9 +15,9 @@ enum states {
 	WAIT_8BITS_1,
 	WAIT_8BITS_2,
 	MAQ,
-	MSG_MAQ/*,
+	MSG_MAQ,
 	MRS,
-	MSG_MRS*/
+	MSG_MRS
 };
 
 // Int
@@ -113,6 +113,16 @@ check_MAQ (fsm_t* this)
 }
 
 static int
+check_MRS (fsm_t* this)
+{
+	pthread_mutex_lock (&mutex);
+	int result = 0;
+	result = jarvan.MRS;
+	pthread_mutex_unlock (&mutex);
+	return result;
+}
+
+static int
 check_ACK_and_MAQ_left (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
@@ -123,11 +133,31 @@ check_ACK_and_MAQ_left (fsm_t* this)
 }
 
 static int
+check_ACK_and_MRS_left (fsm_t* this)
+{
+	pthread_mutex_lock (&mutex);
+	int result = 0;
+	result = (jarvan.ack && jarvan.msg_MRS_left);
+	pthread_mutex_unlock (&mutex);
+	return result;
+}
+
+static int
 check_XCK_and_notMAQ_and_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
 	result = (!jarvan.msg_MAQ_left && jarvan.stop_cond);
+	pthread_mutex_unlock (&mutex);
+	return result;
+}
+
+static int
+check_XCK_and_notMRS_and_stop (fsm_t* this)
+{
+	pthread_mutex_lock (&mutex);
+	int result = 0;
+	result = (!jarvan.msg_MRS_left && jarvan.stop_cond);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -200,8 +230,6 @@ MAQ_received (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	char CO2[20], TVOC[20];
-
 	char aux0[20] = "04";
 	char aux1[20] = "00";
 	char CRC[20]= "0";
@@ -256,6 +284,65 @@ MAQ_received (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+static void
+MRS_received (fsm_t* this)
+{
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	char aux0[20] = "04";
+	char aux1[20] = "00";
+	char CRC[20]= "0";
+
+	printf("\nMRS command has been received\n");
+	fflush(stdout);
+
+	if((p_sgp30->realmeasures) == 0){
+		strcpy(p_sgp30->measures[0], aux0);
+		strcpy(p_sgp30->measures[1], aux1);
+		strcpy(p_sgp30->measures[2], CRC);
+		strcpy(p_sgp30->measures[3], aux0);
+		strcpy(p_sgp30->measures[4], aux1);
+		strcpy(p_sgp30->measures[5], CRC);
+	}
+	else{
+
+		int aux11_rand = rand() % 99;
+		int aux21_rand = rand() % 99;
+		int aux12_rand = rand() % 99;
+		int aux22_rand = rand() % 99;
+		char aux11 [20];
+		char aux21 [20];
+		char aux12 [20];
+		char aux22 [20];
+		sprintf(aux11, "%d", aux11_rand);
+		sprintf(aux21, "%d", aux21_rand);
+		sprintf(aux12, "%d", aux12_rand);
+		sprintf(aux22, "%d", aux22_rand);
+
+		strcpy(p_sgp30->measures[0], aux11);
+		strcpy(p_sgp30->measures[1], aux12);
+		strcpy(p_sgp30->measures[2], CRC);
+		strcpy(p_sgp30->measures[3], aux21);
+		strcpy(p_sgp30->measures[4], aux22);
+		strcpy(p_sgp30->measures[5], CRC);
+	}
+
+	printf("H2 vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
+	printf("Ethanol vale %s%s \n", p_sgp30->measures[3], p_sgp30->measures[4]);
+	fflush(stdout);
+
+	char message[20] = "ACK";
+	pthread_mutex_lock(&mutex_socket);
+	write(p_sgp30->socket_desc,&message,20);
+	pthread_mutex_unlock(&mutex_socket);
+
+	pthread_mutex_lock (&mutex);
+	jarvan.MRS = 0;
+	jarvan.process1 = 0;
+	jarvan.process2 = 0;
+	pthread_mutex_unlock (&mutex);
+}
 
 static void
 I2C_address_received (fsm_t* this)
@@ -316,6 +403,24 @@ MAQ_success (fsm_t* this)
 	jarvan.stop_cond = 0;
 	jarvan.xck = 0;
 	jarvan.msg_MAQ_left = 1;
+	pthread_mutex_unlock (&mutex);
+}
+
+static void
+MRS_success (fsm_t* this)
+{
+	TipoSensor *p_sgp30;
+	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	for (int i = 0; i <= 5; ++i){
+    p_sgp30->address -= 1;
+    strcpy(p_sgp30->measures[(p_sgp30->address)], "0");
+  }
+
+	pthread_mutex_lock (&mutex);
+	jarvan.stop_cond = 0;
+	jarvan.xck = 0;
+	jarvan.msg_MRS_left = 1;
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -384,16 +489,21 @@ process_bits_2 (fsm_t* this)
 	printf("El segundo cond vale %s\n", p_sgp30->receiver);
 	fflush(stdout);
 
-	char aux1[20] = "03";
-	char aux2[20] = "08";
+	char iaq[20] = "03";
+	char maq[20] = "08";
+	char mrs[20] = "50";
 
-	if(!strcmp(p_sgp30->receiver,aux1)){
+	if(!strcmp(p_sgp30->receiver,iaq)){
 		pthread_mutex_lock (&mutex);
 		jarvan.IAQ = 1;
 		pthread_mutex_unlock (&mutex);
-	}else if(!strcmp(p_sgp30->receiver,aux2)){
+	}else if(!strcmp(p_sgp30->receiver,maq)){
 		pthread_mutex_lock (&mutex);
 		jarvan.MAQ = 1;
+		pthread_mutex_unlock (&mutex);
+	}else if(!strcmp(p_sgp30->receiver,mrs)){
+		pthread_mutex_lock (&mutex);
+		jarvan.MRS = 1;
 		pthread_mutex_unlock (&mutex);
 	}else{
 		pthread_mutex_lock (&mutex);
@@ -505,16 +615,13 @@ fsm_new_sensor ()
         {  WAIT_8BITS_1, check_I2C_address, IDLE, wrong_I2C_address},
 				{  WAIT_8BITS_1, check_correct_command, WAIT_8BITS_2, correct_command},
         {  WAIT_8BITS_2, check_MAQ, MAQ, MAQ_received},
-        //{  WAIT_16BITS, check_MRS, MRS, MRS_received},
+        {  WAIT_8BITS_2, check_MRS, MAQ, MRS_received},
         {  MAQ, check_start_and_bits, MSG_MAQ, I2C_address_received},
+				{  MAQ, check_start_and_bits, MSG_MRS, I2C_address_received},
         {  MSG_MAQ, check_ACK_and_MAQ_left, MSG_MAQ, send_msg_2IRIS},
         {  MSG_MAQ, check_XCK_and_notMAQ_and_stop, IDLE, MAQ_success},
-        /*	MRS message send
-        {  MRS, check_start_and_bits, MSG_MRS, I2C_address_received},
-        {  MSG_MRS, check_ACK_and_MRS_left, MSG_MRS, send_msg_2IRIS},
-        {  MSG_MRS, check_H2_or_ethanol_sent, MSG_MRS, calculate_sent_CRC},
+				{  MSG_MRS, check_ACK_and_MRS_left, MSG_MAQ, send_msg_2IRIS},
         {  MSG_MRS, check_XCK_and_notMRS_and_stop, IDLE, MRS_success},
-        */
         { -1, NULL, -1, NULL },
     };
 
