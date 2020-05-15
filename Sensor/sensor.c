@@ -76,7 +76,7 @@ check_IAQ_and_stop (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.IAQ && jarvan.stop_cond);
+	result = (jarvan.IAQ && jarvan.stop_cond && !jarvan.MAQ && !jarvan.bits_received && !jarvan.MRS  && !jarvan.incorrect_command);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -96,7 +96,7 @@ check_incorrect_command(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.incorrect_command);
+	result = (jarvan.incorrect_command && !jarvan.correct_command && !jarvan.bits_received);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -106,7 +106,7 @@ check_correct_command(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = jarvan.correct_command;
+	result = (jarvan.correct_command && !jarvan.incorrect_command);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -116,7 +116,7 @@ check_MAQ (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = jarvan.MAQ;
+	result = (jarvan.MAQ && !jarvan.bits_received && !jarvan.MRS && !jarvan.IAQ && !jarvan.incorrect_command);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -126,7 +126,7 @@ check_MRS (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = jarvan.MRS;
+	result = (!jarvan.MAQ && !jarvan.bits_received && jarvan.MRS && !jarvan.IAQ && !jarvan.incorrect_command);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -136,7 +136,7 @@ check_ACK_and_MAQ_left (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.ack && jarvan.msg_MAQ_left);
+	result = (jarvan.ack && jarvan.msg_MAQ_left && !jarvan.xck);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -202,6 +202,8 @@ I2C_address_success (fsm_t* this)
 	pthread_mutex_lock (&mutex);
 	jarvan.start_cond = 0;
 	jarvan.bits_received = 0;
+	jarvan.incorrect_command = 0;
+	jarvan.correct_command = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -221,6 +223,7 @@ IAQ_received (fsm_t* this)
 
 	pthread_mutex_lock (&mutex);
 	jarvan.IAQ = 0;
+	jarvan.bits_received = 0;
 	jarvan.stop_cond = 0;
 	jarvan.process1 = 0;
 	jarvan.process2 = 0;
@@ -400,6 +403,7 @@ I2C_address_received (fsm_t* this)
 	pthread_mutex_lock (&mutex);
 	jarvan.ack = 1;
 	jarvan.msg_MAQ_left = 1;
+	jarvan.start_cond = 0;
 	jarvan.bits_received = 0;
 	pthread_mutex_unlock (&mutex);
 }
@@ -488,6 +492,8 @@ wrong_command(fsm_t* this)
 
 	pthread_mutex_lock (&mutex);
 	jarvan.incorrect_command = 0;
+	jarvan.start_cond = 0;
+	jarvan.bits_received = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
@@ -502,6 +508,8 @@ correct_command (fsm_t* this)
 
 	pthread_mutex_lock (&mutex);
 	jarvan.correct_command = 0;
+	jarvan.MAQ = 0;
+	jarvan.MRS = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
