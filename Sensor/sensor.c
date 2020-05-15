@@ -8,7 +8,8 @@ static pthread_mutex_t mutex;
 static TipoFlags jarvan;
 static TipoSensor sgp30;
 
-int calculate_CRC(int numberone, int numbertwo);
+char* calculate_CRC(int numberone, int numbertwo);
+char CRC_aux[20];
 
 enum states {
 	IDLE, // initial state
@@ -232,7 +233,7 @@ MAQ_received (fsm_t* this)
 
 	char aux0[20] = "04";
 	char aux1[20] = "00";
-	char CRC[20]= "0";
+	char CRC[20]= "4";
 
 	printf("\nMAQ command has been received\n");
 	fflush(stdout);
@@ -251,10 +252,17 @@ MAQ_received (fsm_t* this)
 		int aux21_rand = rand() % 99;
 		int aux12_rand = rand() % 99;
 		int aux22_rand = rand() % 99;
+
 		char aux11 [20];
 		char aux21 [20];
 		char aux12 [20];
 		char aux22 [20];
+		char CRC1[20];
+		char CRC2[20];
+
+		strcpy(CRC1, calculate_CRC(aux11_rand,aux12_rand));
+		strcpy(CRC2, calculate_CRC(aux21_rand,aux22_rand));
+
 		sprintf(aux11, "%d", aux11_rand);
 		sprintf(aux21, "%d", aux21_rand);
 		sprintf(aux12, "%d", aux12_rand);
@@ -262,10 +270,10 @@ MAQ_received (fsm_t* this)
 
 		strcpy(p_sgp30->measures[0], aux11);
 		strcpy(p_sgp30->measures[1], aux12);
-		strcpy(p_sgp30->measures[2], CRC);
+		strcpy(p_sgp30->measures[2], CRC1);
 		strcpy(p_sgp30->measures[3], aux21);
 		strcpy(p_sgp30->measures[4], aux22);
-		strcpy(p_sgp30->measures[5], CRC);
+		strcpy(p_sgp30->measures[5], CRC2);
 	}
 
 	printf("CO2 vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
@@ -292,7 +300,7 @@ MRS_received (fsm_t* this)
 
 	char aux0[20] = "04";
 	char aux1[20] = "00";
-	char CRC[20]= "0";
+	char CRC[20]= "04";
 
 	printf("\nMRS command has been received\n");
 	fflush(stdout);
@@ -311,10 +319,17 @@ MRS_received (fsm_t* this)
 		int aux21_rand = rand() % 99;
 		int aux12_rand = rand() % 99;
 		int aux22_rand = rand() % 99;
+
 		char aux11 [20];
 		char aux21 [20];
 		char aux12 [20];
 		char aux22 [20];
+		char CRC1[20];
+		char CRC2[20];
+
+		strcpy(CRC1, calculate_CRC(aux11_rand,aux12_rand));
+		strcpy(CRC2, calculate_CRC(aux21_rand,aux22_rand));
+
 		sprintf(aux11, "%d", aux11_rand);
 		sprintf(aux21, "%d", aux21_rand);
 		sprintf(aux12, "%d", aux12_rand);
@@ -322,10 +337,10 @@ MRS_received (fsm_t* this)
 
 		strcpy(p_sgp30->measures[0], aux11);
 		strcpy(p_sgp30->measures[1], aux12);
-		strcpy(p_sgp30->measures[2], CRC);
+		strcpy(p_sgp30->measures[2], CRC1);
 		strcpy(p_sgp30->measures[3], aux21);
 		strcpy(p_sgp30->measures[4], aux22);
-		strcpy(p_sgp30->measures[5], CRC);
+		strcpy(p_sgp30->measures[5], CRC2);
 	}
 
 	printf("H2 vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
@@ -633,7 +648,10 @@ fsm_new_sensor ()
 		return fsm_new (IDLE, sensor_tt, &sgp30);
 }
 
-int
+char*
 calculate_CRC(int numberone, int numbertwo){
-	return numberone-numbertwo;
+	memset(CRC_aux,0,sizeof(CRC_aux));
+	int aux = abs(numberone-numbertwo);
+	sprintf(CRC_aux, "%d", aux);
+	return CRC_aux;
 }
