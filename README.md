@@ -17,7 +17,7 @@
 1. Open two terminals (one will work as the sensor and the other as the Iris)
 2. Git clone the project
 ```
-$ git clone
+$ git clone https://github.com/oscarlpujol/ProyectoFinal.git
 $ cd ProyectoFinal
 ```
 3. Firstly, start the Iris in one terminal
