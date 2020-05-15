@@ -94,7 +94,7 @@ socket_init (){
 	server_GW.sin_port = htons( SOCKETNUMBERGW );
 
 	//Bind
-	if( (bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0) || (bind(socket_desc_GW,(struct sockaddr *)&server_GW , sizeof(server_GW)) < 0))
+	if( (bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0))
 	{
 		puts("bind failed");
 	}
@@ -102,7 +102,6 @@ socket_init (){
 
 	//Listen
 	listen(socket_desc , 1);
-  listen(socket_desc_GW , 1);
 
 	//Accept and incoming connection
   puts("Waiting for incoming connections...");
@@ -110,7 +109,7 @@ socket_init (){
 	if( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*) &c)))
 	{
     iris.socket_desc= new_socket;
-		puts("Connection accepted");
+		puts("Connection to sensor accepted");
 	}
 
 	if (new_socket < 0)
@@ -119,19 +118,13 @@ socket_init (){
 		return 1;
 	}
 
-  /*puts("Waiting for incoming connections(GW)...");
-	c = sizeof(struct sockaddr_in);
-	if( (new_socket_GW = accept(socket_desc_GW, (struct sockaddr *)&client_GW, (socklen_t*) &c)))
+  if( connect(socket_desc_GW, (struct sockaddr *)&server_GW, sizeof(server_GW)) < 0)
 	{
-    iris.socket_desc_GW = new_socket_GW;
-		puts("Connection accepted");
-	}
+		puts("Error conecting to GW");
 
-	if (new_socket < 0)
-	{
-		perror("accept failed");
-		return 1;
-	}*/
+	}else{
+    puts("Connected to GW");
+  }
 
 	return 0;
 }
@@ -149,7 +142,7 @@ observer() {
   }else if (!strcmp(lastMsg,xck)){
     xck_isr();
   }else{
-    new_msg(&lastMsg);
+    new_msg(lastMsg);
     bits_isr();
   }
 

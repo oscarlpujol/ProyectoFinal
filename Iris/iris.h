@@ -31,11 +31,12 @@
 #define OWN_ADDRESS "1234"
 #define SENSOR_ADDRESS "5000"
 #define SOCKETNUMBER 8888
-#define SOCKETNUMBERGW 8889
+#define SOCKETNUMBERGW 10000
 
 // Iris structure
 typedef struct{
 
+	char id[20];
 	unsigned int state : 1; // 1 -> ON, 0 ->OFF
 	tmr_t* tmr_MAQ;
 	tmr_t* tmr_on;

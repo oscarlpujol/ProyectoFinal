@@ -15,6 +15,7 @@ static char maq_message[5][20] = {"5000", "20", "08", "StartCond", "1234"};
 static char mrs_message[5][20] = {"5000", "20", "50", "StartCond", "1234"};
 
 char CRC_aux[20];
+char res[20];
 
 // FSM states
 enum states {
@@ -31,6 +32,7 @@ enum states {
 
 // Private functon prototypes
 char* calculate_CRC(char* numberone, char* numbertwo);
+char* getDate();
 
 // Checking functions
 static int
@@ -194,7 +196,7 @@ power_on(fsm_t* this)
   TipoIris *p_iris;
 	p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nInitializating sensor\n");
+  printf("\nInitializating sensor...\n");
 	fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_on), TIME_ON); // a sufficient time has to go by until sensor can receive instructions
@@ -214,7 +216,7 @@ power_off(fsm_t* this)
   TipoIris *p_iris;
 	p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nShutting off sensor\n");
+  printf("\nShutting off sensor...\n");
 	fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 100*TIME_MAQ);
@@ -240,7 +242,7 @@ iaq_start(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nSending IAQ command\n");
+  printf("\nSending IAQ command\n\n");
 	fflush(stdout);
 
   p_iris->address = &(iaq_message[0][0]);
@@ -270,7 +272,7 @@ iaq_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nIAQ success\n");
+  printf("\nIAQ success\n\n");
 	fflush(stdout);
 
   pthread_mutex_lock (&mutex);
@@ -299,7 +301,7 @@ maq_start(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nSending MAQ command\n");
+  printf("\nSending MAQ command\n\n");
 	fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 1000*TIME_MAQ);
@@ -332,7 +334,7 @@ mrs_start(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nSending MRS command\n");
+  printf("\nSending MRS command\n\n");
 	fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 1000*TIME_MAQ);
@@ -403,7 +405,7 @@ init_maq_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nMAQ command sent, waiting measures\n");
+  printf("\nMAQ command sent, waiting measures\n\n");
 	fflush(stdout);
 
   p_iris->num_msg = 0; //this counter will increase as measures are received
@@ -423,7 +425,7 @@ init_mrs_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  printf("\nMRS command sent, waiting measures\n");
+  printf("\nMRS command sent, waiting measures\n\n");
 	fflush(stdout);
 
   p_iris->num_msg = 0; //this counter will increase as measures are received
@@ -449,9 +451,6 @@ received_data_success(fsm_t* this)
   fflush(stdout);
 
   p_iris->num_msg += 1;
-
-  printf("Recibido numero %d\n",p_iris->num_msg);
-  fflush(stdout);
 
   if(p_iris->num_msg <= 5){ //ack is not needed for the last message
     pthread_mutex_lock (&mutex);
@@ -504,10 +503,10 @@ msg_checked_success(fsm_t* this)
   strcpy(CRC2, calculate_CRC(p_iris->measures[3],p_iris->measures[4]));
 
   if(!strcmp(CRC1,p_iris->measures[2]) && !strcmp(CRC2,p_iris->measures[5])){
-    printf("\nMSG checked...correct\n");
+    printf("\nMSG checked...correct\n\n");
   	fflush(stdout);
   }else{
-    printf("\nMSG checked...incorrect\n");
+    printf("\nMSG checked...incorrect\n\n");
   	fflush(stdout);
   }
 }
@@ -526,13 +525,32 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   write(p_iris->socket_desc,&message2,20);
   pthread_mutex_unlock(&mutex);
 
-  printf("Se envia StopCond\n");
+  printf("Se envia StopCond\n\n");
   fflush(stdout);
 
   printf("CO2 = %s%s ppm\n", p_iris->measures[0],p_iris->measures[1]);
   fflush(stdout);
-  printf("TVOC = %s%s ppb\n", p_iris->measures[3],p_iris->measures[4]);
+  printf("TVOC = %s%s ppb\n\n", p_iris->measures[3],p_iris->measures[4]);
   fflush(stdout);
+
+  char str[1024] = "Info from "; // message that would be sent to GW
+  strcat(str, p_iris->id);
+  strcat(str, " at ");
+  strcat(str, getDate());
+  strcat(str, "\nH2 = ");
+  strcat(str,p_iris->measures[0]);
+  strcat(str,p_iris->measures[1]);
+  strcat(str, "ppm\nEthanol = ");
+  strcat(str,p_iris->measures[3]);
+  strcat(str,p_iris->measures[4]);
+  strcat(str, "ppm\n");
+
+  /*pthread_mutex_lock (&mutex);
+  write(p_iris->socket_desc_GW, str, sizeof(str));
+  pthread_mutex_unlock (&mutex);*/
+  printf("******Message that would be sent to GW*******\n");
+  printf("%s",str);
+  printf("*********************************************\n");
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ); //restarts timer to get new measures
 
@@ -556,13 +574,33 @@ send_XCK_2sensor_stop_show_results_mrs(fsm_t* this)
   write(p_iris->socket_desc,&message2,20);
   pthread_mutex_unlock(&mutex);
 
-  printf("Se envia StopCond\n");
+  printf("Se envia StopCond\n\n");
   fflush(stdout);
 
   printf("H2 = %s%s ppm\n", p_iris->measures[0],p_iris->measures[1]);
   fflush(stdout);
-  printf("Ethanol = %s%s ppm\n", p_iris->measures[3],p_iris->measures[4]);
+  printf("Ethanol = %s%s ppm\n\n", p_iris->measures[3],p_iris->measures[4]);
   fflush(stdout);
+
+  char str[1024] = "Info from ";
+  strcat(str, p_iris->id);
+  strcat(str, " at ");
+  strcat(str, getDate());
+  strcat(str, "\nH2 = ");
+  strcat(str,p_iris->measures[0]);
+  strcat(str,p_iris->measures[1]);
+  strcat(str, "ppm\nEthanol = ");
+  strcat(str,p_iris->measures[3]);
+  strcat(str,p_iris->measures[4]);
+  strcat(str, "ppm\n");
+
+  /*pthread_mutex_lock (&mutex);
+  write(p_iris->socket_desc_GW, str, sizeof(str));
+  pthread_mutex_unlock (&mutex);*/
+
+  printf("******Message that would be sent to GW*******\n");
+  printf("%s",str);
+  printf("*********************************************\n");
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ); //restarts timer to get new measures
 
@@ -653,6 +691,7 @@ iris_init(TipoIris *p_iris, TipoFlags *flags)
 	pthread_mutex_init(&mutex, NULL);
 
   iris.state = 0;
+  strcpy(iris.id, "Quirofano 1");
   iris.tmr_MAQ = tmr_new (maq_timer);
   iris.tmr_on = tmr_new(initial_timer);
   strcpy(iris.I2C_ADDRESS_IRIS, OWN_ADDRESS);
@@ -711,4 +750,12 @@ calculate_CRC(char* numberone, char* numbertwo){
 	int aux = abs(atoi(numberone)-atoi(numbertwo));
 	sprintf(CRC_aux, "%d", aux);
 	return CRC_aux;
+}
+
+char* getDate(){
+  time_t now;
+  time(&now);
+  struct tm tm = *localtime(&now);
+  sprintf(res,"%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+  return res;
 }
