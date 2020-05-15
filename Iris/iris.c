@@ -1,20 +1,22 @@
-/*
+/** File name   :iris.c
+  * Description :fsm functions and interruption function
+  */
 
-*/
-
+// Includes
 #include "iris.h"
 
+// Private variables
 static pthread_mutex_t mutex;
 static TipoFlags jarvan;
 static TipoIris iris;
-
-char* calculate_CRC(char* numberone, char* numbertwo);
-char CRC_aux[20];
 
 static char iaq_message[3][20] = {"5000","20","03"};
 static char maq_message[5][20] = {"5000", "20", "08", "StartCond", "1234"};
 static char mrs_message[5][20] = {"5000", "20", "50", "StartCond", "1234"};
 
+char CRC_aux[20];
+
+// FSM states
 enum states {
   SLEEP, // initial state
   IDLE,
@@ -27,8 +29,10 @@ enum states {
   CHECK_CRC_MRS
 };
 
-// Int
+// Private functon prototypes
+char* calculate_CRC(char* numberone, char* numbertwo);
 
+// Checking functions
 static int
 check_button_on (fsm_t* this)
 {
@@ -179,8 +183,11 @@ check_all_msg_received_and_checked(fsm_t* this)
   return result;
 }
 
-//Void
+// Function for the FSM
 
+/**
+* @brief Starts system
+*/
 static void
 power_on(fsm_t* this)
 {
@@ -190,14 +197,17 @@ power_on(fsm_t* this)
   printf("\nInitializating sensor\n");
 	fflush(stdout);
 
-  tmr_startms((tmr_t*)(p_iris->tmr_on), TIME_ON);
+  tmr_startms((tmr_t*)(p_iris->tmr_on), TIME_ON); // a sufficient time has to go by until sensor can receive instructions
 
   pthread_mutex_lock (&mutex);
-  p_iris->state = 1;
+  p_iris->state = 1; // turning this to 1 means iris is ON
 	jarvan.button_on = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Stops system
+*/
 static void
 power_off(fsm_t* this)
 {
@@ -210,17 +220,20 @@ power_off(fsm_t* this)
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), 100*TIME_MAQ);
 
   pthread_mutex_lock(&mutex);
-  char message[20] = "PowerOff";
+  char message[20] = "PowerOff"; // Wouldnt happen in real system but this "tells" the sensor its off
   write(p_iris->socket_desc,&message,20);
   pthread_mutex_unlock(&mutex);
 
   pthread_mutex_lock (&mutex);
-  p_iris->state = 0;
+  p_iris->state = 0; // turning this to 0 means iris is OFF
   jarvan.initialized = 0;
 	jarvan.button_off = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Prepares Iris to send IAQ commands
+*/
 static void
 iaq_start(fsm_t* this)
 {
@@ -248,6 +261,9 @@ iaq_start(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief IAQ commands sended and everything has gone right
+*/
 static void
 iaq_success(fsm_t* this)
 {
@@ -265,15 +281,18 @@ iaq_success(fsm_t* this)
   printf("Se envia StopCond\n");
   fflush(stdout);
 
-  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);// sets timer for next MAQ petition
 
   pthread_mutex_lock (&mutex);
 	jarvan.ack = 0;
   jarvan.msg_IAQ_left = 0;
-  jarvan.initialized = 1;
+  jarvan.initialized = 1; //IAQ must only be sent one time everytime sensor its powered on
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Prepares Iris to send MAQ commands
+*/
 static void
 maq_start(fsm_t* this)
 {
@@ -304,6 +323,9 @@ maq_start(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Prepares Iris to send MRS commands
+*/
 static void
 mrs_start(fsm_t* this)
 {
@@ -333,6 +355,9 @@ mrs_start(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Send messages to sensor through socket
+*/
 static void
 send_msg_2sensor(fsm_t* this)
 {
@@ -349,7 +374,7 @@ send_msg_2sensor(fsm_t* this)
   p_iris->address += 20;
   p_iris->num_sent += 1;
 
-  if((p_iris->num_sent) >= (p_iris->length_next_msg)){
+  if((p_iris->num_sent) >= (p_iris->length_next_msg)){ //if all messages have been sent activates flag
     if(this->current_state == MSG_IAQ){
       pthread_mutex_lock (&mutex);
       jarvan.msg_IAQ_left = 1;
@@ -364,13 +389,14 @@ send_msg_2sensor(fsm_t* this)
     	pthread_mutex_unlock (&mutex);
     }
   }
-
   pthread_mutex_lock (&mutex);
   jarvan.ack = 0;
   pthread_mutex_unlock (&mutex);
-
 }
 
+/**
+* @brief MAQ commands have been received, waiting for the sensor to send the measures
+*/
 static void
 init_maq_success(fsm_t* this)
 {
@@ -380,7 +406,7 @@ init_maq_success(fsm_t* this)
   printf("\nMAQ command sent, waiting measures\n");
 	fflush(stdout);
 
-  p_iris->num_msg = 0;
+  p_iris->num_msg = 0; //this counter will increase as measures are received
 
   pthread_mutex_lock (&mutex);
 	jarvan.msg_MAQ_left = 0;
@@ -388,6 +414,9 @@ init_maq_success(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief MRS commands have been received, waiting for the sensor to send the measures
+*/
 static void
 init_mrs_success(fsm_t* this)
 {
@@ -397,7 +426,7 @@ init_mrs_success(fsm_t* this)
   printf("\nMRS command sent, waiting measures\n");
 	fflush(stdout);
 
-  p_iris->num_msg = 0;
+  p_iris->num_msg = 0; //this counter will increase as measures are received
 
   pthread_mutex_lock (&mutex);
 	jarvan.msg_MRS_left = 0;
@@ -405,6 +434,9 @@ init_mrs_success(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief storages the measures sent by the sensor
+*/
 static void
 received_data_success(fsm_t* this)
 {
@@ -421,7 +453,7 @@ received_data_success(fsm_t* this)
   printf("Recibido numero %d\n",p_iris->num_msg);
   fflush(stdout);
 
-  if(p_iris->num_msg <= 5){
+  if(p_iris->num_msg <= 5){ //ack is not needed for the last message
     pthread_mutex_lock (&mutex);
     char message[20] = "ACK";
     write(p_iris->socket_desc,&message,20);
@@ -431,7 +463,7 @@ received_data_success(fsm_t* this)
     fflush(stdout);
   }
 
-  if(p_iris->num_msg == 6){
+  if(p_iris->num_msg == 6){ //checks if every message has been received
     pthread_mutex_lock (&mutex);
   	jarvan.all_msg_received = 1;
   	pthread_mutex_unlock (&mutex);
@@ -442,6 +474,9 @@ received_data_success(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief enter to the checking phase
+*/
 static void
 check_msg(fsm_t* this)
 {
@@ -453,6 +488,9 @@ check_msg(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief checks if CRC received value agrees to the CRC calculated with the measures received
+*/
 static void
 msg_checked_success(fsm_t* this)
 {
@@ -474,6 +512,9 @@ msg_checked_success(fsm_t* this)
   }
 }
 
+/**
+* @brief ends MAQ procedure
+*/
 static void
 send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
 {
@@ -493,7 +534,7 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   printf("TVOC = %s%s ppb\n", p_iris->measures[3],p_iris->measures[4]);
   fflush(stdout);
 
-  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ); //restarts timer to get new measures
 
   pthread_mutex_lock (&mutex);
   jarvan.all_msg_received = 0;
@@ -501,6 +542,9 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief ends MRS procedure
+*/
 static void
 send_XCK_2sensor_stop_show_results_mrs(fsm_t* this)
 {
@@ -520,7 +564,7 @@ send_XCK_2sensor_stop_show_results_mrs(fsm_t* this)
   printf("Ethanol = %s%s ppm\n", p_iris->measures[3],p_iris->measures[4]);
   fflush(stdout);
 
-  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
+  tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ); //restarts timer to get new measures
 
   pthread_mutex_lock (&mutex);
   jarvan.all_msg_received = 0;
@@ -529,11 +573,10 @@ send_XCK_2sensor_stop_show_results_mrs(fsm_t* this)
 }
 
 
-//ISR
-
+// ISR
+// Interruption functions for the timers, the observer and the button interruptions
 static void
 initial_timer (union sigval value){
-
 	pthread_mutex_lock (&mutex);
 	jarvan.time_on = 1;
 	pthread_mutex_unlock (&mutex);
@@ -542,7 +585,6 @@ initial_timer (union sigval value){
 
 static void
 maq_timer (union sigval value){
-
 	pthread_mutex_lock (&mutex);
 	jarvan.timeout_MAQ = 1;
 	pthread_mutex_unlock (&mutex);
@@ -601,8 +643,7 @@ new_msg (char* msg){
 	strcpy(iris.receiver, msg);
 }
 
-//Init
-
+// Initialization functions
 int
 iris_init(TipoIris *p_iris, TipoFlags *flags)
 {
@@ -658,6 +699,12 @@ fsm_new_iris ()
 
     return fsm_new (SLEEP, iris_tt, &iris);
 }
+
+/**
+* @brief calculates CRC expected
+* @params messages received
+* @returns the CRC calculated with the messages introduced in the params
+*/
 char*
 calculate_CRC(char* numberone, char* numbertwo){
   memset(CRC_aux,0,sizeof(CRC_aux));

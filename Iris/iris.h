@@ -1,9 +1,11 @@
-/*
- */
+/** File name   :iris.h
+  * Description :header for iris realated files
+  */
 
 #ifndef _IRIS_H_
 #define _IRIS_H_
 
+// Includes
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -18,20 +20,20 @@
 #include <time.h>
 #include <sys/time.h>
 
-
 #include "../task.h"
 #include "../fsm.h"
 #include "../tmr.h"
 
 // Variables
-
 #define CLK_MS 1
-#define TIME_ON 15
+#define TIME_ON 1000
 #define TIME_MAQ 20000
 #define OWN_ADDRESS "1234"
 #define SENSOR_ADDRESS "5000"
 #define SOCKETNUMBER 8888
+#define SOCKETNUMBERGW 8889
 
+// Iris structure
 typedef struct{
 
 	unsigned int state : 1; // 1 -> ON, 0 ->OFF
@@ -41,6 +43,7 @@ typedef struct{
 	char I2C_ADDRESS_SENSOR[20]; // SENSOR I2C address
 	char measures[6][20];
 	int socket_desc;
+	int socket_desc_GW;
 	char* address;
 	int length_next_msg;
 	int num_msg;
@@ -49,6 +52,7 @@ typedef struct{
 
 }TipoIris;
 
+// Flags
 typedef struct{
 
 	unsigned int button_on : 1;
@@ -70,6 +74,7 @@ typedef struct{
 
 }TipoFlags;
 
+// Function used between files
 void *
 button_onoff_interruption();
 void

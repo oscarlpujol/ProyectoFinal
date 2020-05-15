@@ -1,4 +1,6 @@
-// Button MRS_now Interruption
+/** File name   :button_MRSnow_interruption.c
+  * Description :simulated interruption that works when r key is pressed
+  */
 
 #include "iris.h"
 

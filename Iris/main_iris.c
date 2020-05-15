@@ -1,19 +1,28 @@
+/** File name   :main_iris.c
+  * Description :intializes and starts the iris system and the interruption
+  */
+
+// Includes
 #include "iris.h"
 
+// Private variables
 static TipoIris iris;
 static TipoFlags flags;
-
-fsm_t* fsm_new_iris ();
 
 static char lastMsg[20];
 static char ack[20] = "ACK";
 static char xck[20] = "XCK";
 
+// Private function prototypes
+fsm_t* fsm_new_iris ();
 int observer();
 int socket_init();
 int iris_init(TipoIris* iris, TipoFlags* flags);
 int ready (int fd);
 
+/**
+* @brief function that will run forever checking the iris fsm and observer
+*/
 void *
 total_iris_control (void* ignore)
 {
@@ -33,7 +42,7 @@ total_iris_control (void* ignore)
       timeval_sub (&timeout, &next_activation, &now);
       select (0, NULL, NULL, NULL, &timeout);
 
-      if(ready(iris.socket_desc)){
+      if(ready(iris.socket_desc)){//wont block if nothing happens
           observer();
       }
 
@@ -41,6 +50,9 @@ total_iris_control (void* ignore)
     }
 }
 
+/**
+* @brief starts every thread needed. One for each simulated interruption and other for the Iris system
+*/
 int
 main ()
 {
@@ -54,16 +66,20 @@ main ()
     pthread_join (tid4, NULL);
     return 0;
 }
-
+/**
+* @brief initialization of the sockets needed (as server for sensor control, as client for GW)
+* @return socket descriptors will be saved in the iris structure
+*/
 int
 socket_init (){
-  int socket_desc , new_socket, c;
-	struct sockaddr_in server , client;
+  int socket_desc , new_socket, socket_desc_GW , new_socket_GW, c;
+	struct sockaddr_in server , client, server_GW , client_GW;
 
 	//Create socket
 	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+  socket_desc_GW = socket(AF_INET , SOCK_STREAM , 0);
 
-	if (socket_desc == -1)
+	if (socket_desc == -1 || socket_desc_GW == -1)
 	{
 		printf("Could not create socket");
 	}
@@ -73,8 +89,12 @@ socket_init (){
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = htons( SOCKETNUMBER );
 
+  server_GW.sin_family = AF_INET;
+	server_GW.sin_addr.s_addr = INADDR_ANY;
+	server_GW.sin_port = htons( SOCKETNUMBERGW );
+
 	//Bind
-	if( (bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0))
+	if( (bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0) || (bind(socket_desc_GW,(struct sockaddr *)&server_GW , sizeof(server_GW)) < 0))
 	{
 		puts("bind failed");
 	}
@@ -82,6 +102,7 @@ socket_init (){
 
 	//Listen
 	listen(socket_desc , 1);
+  listen(socket_desc_GW , 1);
 
 	//Accept and incoming connection
   puts("Waiting for incoming connections...");
@@ -98,9 +119,26 @@ socket_init (){
 		return 1;
 	}
 
+  /*puts("Waiting for incoming connections(GW)...");
+	c = sizeof(struct sockaddr_in);
+	if( (new_socket_GW = accept(socket_desc_GW, (struct sockaddr *)&client_GW, (socklen_t*) &c)))
+	{
+    iris.socket_desc_GW = new_socket_GW;
+		puts("Connection accepted");
+	}
+
+	if (new_socket < 0)
+	{
+		perror("accept failed");
+		return 1;
+	}*/
+
 	return 0;
 }
 
+/**
+* @brief reads from the sensor socket and calls interrupton functions
+*/
 int
 observer() {
   memset(lastMsg, 0, sizeof(lastMsg));
@@ -119,6 +157,10 @@ observer() {
 
 }
 
+/**
+* @brief reacts to a key being hit
+* @return 1 if a key from keyboard has hitted, 0 if not
+*/
 int kbhit(){
   struct termios oldt, newt;
   int ch;
@@ -145,6 +187,11 @@ int kbhit(){
   return 0;
 }
 
+/**
+* @brief checks if something is happening in the socket descriptor so read or accept wont block
+* @param file descriptor (socket descriptor is a file descriptor)
+* @return >0 if file descriptor wont block
+*/
 int ready (int fd){
   struct timeval timeout = {1,0};
   fd_set rdset;

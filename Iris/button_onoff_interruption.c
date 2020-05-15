@@ -1,4 +1,6 @@
-// Button OnOff Interruption
+/** File name   :button_onoff_interruption.c
+  * Description :simulated interruption that works when space key is pressed
+  */
 
 #include "iris.h"
 

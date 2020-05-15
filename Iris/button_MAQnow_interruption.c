@@ -1,4 +1,6 @@
-// Button MAQ_now Interruption
+/** File name   :button_MAQnow_interruption.c
+  * Description :simulated interruption that works when m key is pressed
+  */
 
 #include "iris.h"
 
@@ -16,7 +18,7 @@ button_MAQnow_interruption(){
     timeval_sub (&timeout, &next_activation, &now);
     select (0, NULL, NULL, NULL, &timeout) ;
 
-    if(kbhit() && getchar() == 'm'){
+    if(kbhit() && getchar() == 'm'){ //checks a key is hitted and that its the m key
       button_MAQnow_isr();
     }
   }
