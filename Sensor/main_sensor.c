@@ -134,7 +134,7 @@ observer() {
   }else if (!strcmp(lastMsg,powerOff)){
     powerOff_isr();
   }else{
-    new_msg(&lastMsg);
+    new_msg(lastMsg);
     bits_ack_isr();
     bits_isr();
   }

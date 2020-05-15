@@ -182,7 +182,7 @@ I2C_address_success (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("\nDireccion I2C recibida con exito!\n");
+	printf("\nDireccion I2C recibida con exito!\n\n");
 	printf("I2C address = %s \n", p_sgp30->receiver);
 	fflush(stdout);
 
@@ -258,7 +258,7 @@ MAQ_received (fsm_t* this)
 	char aux1[20] = "00";
 	char CRC[20]= "4";
 
-	printf("\nMAQ command has been received\n");
+	printf("\nMAQ command has been received\n\n");
 	fflush(stdout);
 
 	if((p_sgp30->realmeasures) == 0){ //as said before during REALMEASURES_TIME measures are set to a fixed value
@@ -299,8 +299,8 @@ MAQ_received (fsm_t* this)
 		strcpy(p_sgp30->measures[5], CRC2);
 	}
 
-	printf("CO2 vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
-	printf("TVOC vale %s%s \n", p_sgp30->measures[3], p_sgp30->measures[4]);
+	printf("CO2 medido vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
+	printf("TVOC medido vale %s%s \n", p_sgp30->measures[3], p_sgp30->measures[4]);
 	fflush(stdout);
 
 	char message[20] = "ACK";
@@ -326,9 +326,9 @@ MRS_received (fsm_t* this)
 
 	char aux0[20] = "04";
 	char aux1[20] = "00";
-	char CRC[20]= "04";
+	char CRC[20]= "4";
 
-	printf("\nMRS command has been received\n");
+	printf("\nMRS command has been received\n\n");
 	fflush(stdout);
 
 	if((p_sgp30->realmeasures) == 0){
@@ -369,8 +369,8 @@ MRS_received (fsm_t* this)
 		strcpy(p_sgp30->measures[5], CRC2);
 	}
 
-	printf("H2 vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
-	printf("Ethanol vale %s%s \n", p_sgp30->measures[3], p_sgp30->measures[4]);
+	printf("H2 medido vale %s%s \n", p_sgp30->measures[0],p_sgp30->measures[1]);
+	printf("Ethanol medido vale %s%s \n", p_sgp30->measures[3], p_sgp30->measures[4]);
 	fflush(stdout);
 
 	char message[20] = "ACK";
@@ -394,7 +394,7 @@ I2C_address_received (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("Direccion I2C de la IRIS recibida con exito!\n");
+	printf("Direccion I2C de IRIS recibida con exito!\n\n");
 	printf("IRIS I2C address = %s \n", p_sgp30->receiver);
 	fflush(stdout);
 
@@ -415,7 +415,7 @@ send_msg_2IRIS (fsm_t* this)
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
 	char measure[20]; strcpy(measure,(p_sgp30->measures[(p_sgp30->address)]));
-	printf("\nSe envia %s\n", measure);
+	printf("Se envia %s\n", measure);
 	fflush(stdout);
 	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc, &measure,20);
@@ -524,7 +524,7 @@ process_bits_1 (fsm_t* this)
 
 	char aux[20] = "20";
 
-	printf("El primer cond vale %s\n", p_sgp30->receiver);
+	printf("El primer mensaje de la orden vale %s\n", p_sgp30->receiver);
 	fflush(stdout);
 
 	if(!strcmp((p_sgp30->receiver),aux)){
@@ -553,7 +553,7 @@ process_bits_2 (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("El segundo cond vale %s\n", p_sgp30->receiver);
+	printf("El segundo mensaje de la orden vale %s\n", p_sgp30->receiver);
 	fflush(stdout);
 
 	if(!strcmp(p_sgp30->receiver,iaq)){
