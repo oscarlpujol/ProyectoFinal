@@ -8,7 +8,8 @@ static pthread_mutex_t mutex;
 static TipoFlags jarvan;
 static TipoIris iris;
 
-int calculate_CRC(int numberone, int numbertwo);
+char* calculate_CRC(char* numberone, char* numbertwo);
+char CRC_aux[20];
 
 static char iaq_message[3][20] = {"5000","20","03"};
 static char maq_message[5][20] = {"5000", "20", "08", "StartCond", "1234"};
@@ -410,8 +411,6 @@ received_data_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  //p_iris->address = &p_iris->measures;
-
   strcpy(p_iris->measures[p_iris->num_msg], p_iris->receiver);
 
   printf("Recibido vale %s\n", p_iris->measures[p_iris->num_msg]);
@@ -421,12 +420,6 @@ received_data_success(fsm_t* this)
 
   printf("Recibido numero %d\n",p_iris->num_msg);
   fflush(stdout);
-
-  /*if(((p_iris->num_msg) == 3) || ((p_iris->num_msg) == 6)){
-    pthread_mutex_lock (&mutex);
-  	jarvan.msg_received = 1;
-  	pthread_mutex_unlock (&mutex);
-  }*/
 
   if(p_iris->num_msg <= 5){
     pthread_mutex_lock (&mutex);
@@ -466,9 +459,13 @@ msg_checked_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  char aux[20] = "0";
+  char CRC1[20];
+  char CRC2[20];
 
-  if(/*calculate_CRC(p_iris->measures[(p_iris->num_msg)-3],p_iris->measures[(p_iris->num_msg)-2])*/!strcmp(aux,p_iris->measures[2]) && !strcmp(aux,p_iris->measures[5])){
+  strcpy(CRC1, calculate_CRC(p_iris->measures[0],p_iris->measures[1]));
+  strcpy(CRC2, calculate_CRC(p_iris->measures[3],p_iris->measures[4]));
+
+  if(!strcmp(CRC1,p_iris->measures[2]) && !strcmp(CRC2,p_iris->measures[5])){
     printf("\nMSG checked...correct\n");
   	fflush(stdout);
   }else{
@@ -634,7 +631,7 @@ iris_init(TipoIris *p_iris, TipoFlags *flags)
 
 
 fsm_t*
-fsm_new_iris (/*int* validp, int pir, int alarm*/)
+fsm_new_iris ()
 {
     static fsm_trans_t iris_tt[] = {
         {  SLEEP, check_button_on, IDLE, power_on},
@@ -661,7 +658,10 @@ fsm_new_iris (/*int* validp, int pir, int alarm*/)
 
     return fsm_new (SLEEP, iris_tt, &iris);
 }
-int
-calculate_CRC(int numberone, int numbertwo){
-	return numberone-numbertwo;
+char*
+calculate_CRC(char* numberone, char* numbertwo){
+  memset(CRC_aux,0,sizeof(CRC_aux));
+	int aux = abs(atoi(numberone)-atoi(numbertwo));
+	sprintf(CRC_aux, "%d", aux);
+	return CRC_aux;
 }
