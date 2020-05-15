@@ -1,16 +1,22 @@
-/*
+/** File name   :sensor.c
+  * Description :intializes and starts the iris system and the interruption
+  */
 
-*/
-
+// Includes
 #include "sensor.h"
 
+// Private variables
 static pthread_mutex_t mutex;
 static TipoFlags jarvan;
 static TipoSensor sgp30;
 
-char* calculate_CRC(int numberone, int numbertwo);
 char CRC_aux[20];
 
+char iaq[20] = "03";
+char maq[20] = "08";
+char mrs[20] = "50";
+
+// FSM states
 enum states {
 	IDLE, // initial state
 	WAIT_8BITS_1,
@@ -21,8 +27,10 @@ enum states {
 	MSG_MRS
 };
 
-// Int
+// Private functon prototypes
+char* calculate_CRC(int numberone, int numbertwo);
 
+// Flag checking fucntions
 static int
 check_start_and_bits (fsm_t* this)
 {
@@ -88,7 +96,7 @@ check_incorrect_command(fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.incorrect_command /*|| jarvan.timeout*/);
+	result = (jarvan.incorrect_command);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -163,8 +171,11 @@ check_XCK_and_notMRS_and_stop (fsm_t* this)
 	return result;
 }
 
-// Void
+// Function for the FSM
 
+/**
+* @brief Checks if the address sent is correct
+*/
 static void
 I2C_address_success (fsm_t* this)
 {
@@ -175,7 +186,7 @@ I2C_address_success (fsm_t* this)
 	printf("I2C address = %s \n", p_sgp30->receiver);
 	fflush(stdout);
 
-	if(strcmp(p_sgp30->receiver,p_sgp30->I2C_ADDRESS_SENSOR) != 0)
+	if(strcmp(p_sgp30->receiver,p_sgp30->I2C_ADDRESS_SENSOR) != 0) //strcmp returns 0 if both strings are equal
 	{
 		printf("Dirección incorrecta!\n");
 		fflush(stdout);
@@ -194,6 +205,9 @@ I2C_address_success (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Successufully received the IAQ commands
+*/
 static void
 IAQ_received (fsm_t* this)
 {
@@ -203,7 +217,7 @@ IAQ_received (fsm_t* this)
 	printf("\nSensor has received IAQ order\n\n");
 	fflush(stdout);
 
-	tmr_startms((tmr_t*)(p_sgp30->tmr_real_measures), REALMEASURES_TIME);
+	tmr_startms((tmr_t*)(p_sgp30->tmr_real_measures), REALMEASURES_TIME); //for REALMEASURES_TIME, measures from the sensor are not real (happens everytime sensor is restarted)
 
 	pthread_mutex_lock (&mutex);
 	jarvan.IAQ = 0;
@@ -213,6 +227,9 @@ IAQ_received (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Sensor address sent by Iris doesnt agree with actual value
+*/
 static void
 wrong_I2C_address (fsm_t* this)
 {
@@ -225,6 +242,9 @@ wrong_I2C_address (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief MAQ commands have been received. MAQ measures calculated
+*/
 static void
 MAQ_received (fsm_t* this)
 {
@@ -238,7 +258,7 @@ MAQ_received (fsm_t* this)
 	printf("\nMAQ command has been received\n");
 	fflush(stdout);
 
-	if((p_sgp30->realmeasures) == 0){
+	if((p_sgp30->realmeasures) == 0){ //as said before during REALMEASURES_TIME measures are set to a fixed value
 		strcpy(p_sgp30->measures[0], aux0);
 		strcpy(p_sgp30->measures[1], aux1);
 		strcpy(p_sgp30->measures[2], CRC);
@@ -246,7 +266,7 @@ MAQ_received (fsm_t* this)
 		strcpy(p_sgp30->measures[4], aux1);
 		strcpy(p_sgp30->measures[5], CRC);
 	}
-	else{
+	else{ //measures are simulated with random numbers
 
 		int aux11_rand = rand() % 99;
 		int aux21_rand = rand() % 99;
@@ -292,6 +312,9 @@ MAQ_received (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief MRS commands have been received. MRS measures calculated
+*/
 static void
 MRS_received (fsm_t* this)
 {
@@ -359,6 +382,9 @@ MRS_received (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Iris I2C address received
+*/
 static void
 I2C_address_received (fsm_t* this)
 {
@@ -403,6 +429,9 @@ send_msg_2IRIS (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief MAQ measures sent, all measures from the structure are set to 0
+*/
 static void
 MAQ_success (fsm_t* this)
 {
@@ -421,6 +450,9 @@ MAQ_success (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief MRS measures sent, all measures from the structure are set to 0
+*/
 static void
 MRS_success (fsm_t* this)
 {
@@ -439,6 +471,9 @@ MRS_success (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Commands sent by Iris do not agree with known commands
+*/
 static void
 wrong_command(fsm_t* this)
 {
@@ -456,6 +491,9 @@ wrong_command(fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief First command is correct
+*/
 static void
 correct_command (fsm_t* this)
 {
@@ -467,6 +505,9 @@ correct_command (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Check if the first command message fits with any command known
+*/
 static void
 process_bits_1 (fsm_t* this)
 {
@@ -495,6 +536,9 @@ process_bits_1 (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Check if the second command message fits with any command known
+*/
 static void
 process_bits_2 (fsm_t* this)
 {
@@ -503,10 +547,6 @@ process_bits_2 (fsm_t* this)
 
 	printf("El segundo cond vale %s\n", p_sgp30->receiver);
 	fflush(stdout);
-
-	char iaq[20] = "03";
-	char maq[20] = "08";
-	char mrs[20] = "50";
 
 	if(!strcmp(p_sgp30->receiver,iaq)){
 		pthread_mutex_lock (&mutex);
@@ -531,10 +571,9 @@ process_bits_2 (fsm_t* this)
 	jarvan.process2 = 1;
 	pthread_mutex_unlock (&mutex);
 }
-/*
-Interruption functions
-*/
 
+// ISR
+// Interruption functions for the timers and the observer
 static void
 initial_timer (union sigval value){
 	pthread_mutex_lock (&mutex);
@@ -596,8 +635,7 @@ powerOff_isr(){
 	pthread_mutex_unlock (&mutex);
 }
 
-//Init
-
+// Initialization functions
 int
 sensor_init(TipoSensor *p_sgp30, TipoFlags *flags)
 {
@@ -620,7 +658,6 @@ sensor_init(TipoSensor *p_sgp30, TipoFlags *flags)
 
 	return 0;
 }
-
 
 fsm_t*
 fsm_new_sensor ()
@@ -648,6 +685,11 @@ fsm_new_sensor ()
 		return fsm_new (IDLE, sensor_tt, &sgp30);
 }
 
+/**
+* @brief calculates CRC expected
+* @params measures
+* @returns the CRC calculated with the measures introduced in the params
+*/
 char*
 calculate_CRC(int numberone, int numbertwo){
 	memset(CRC_aux,0,sizeof(CRC_aux));

@@ -1,6 +1,11 @@
+/** File name   :main_sensor.c
+  * Description :intializes and starts the sensor system
+  */
 
+// Include
 #include "sensor.h"
 
+// Private variables
 static TipoSensor sgp30;
 static TipoFlags flags_sensor;
 static TipoFlags flags_sensor_ack;
@@ -12,6 +17,7 @@ static char ack[20] = "ACK";
 static char xck[20] = "XCK";
 static char powerOff[20] = "PowerOff";
 
+// Private function prototypes
 fsm_t* fsm_new_sensor ();
 fsm_t* fsm_new_sensor_ack ();
 
@@ -21,6 +27,9 @@ int sensor_init(TipoSensor* sensor, TipoFlags* flags);
 int sensor_ack_init(TipoSensor* sensor, TipoFlags* flags);
 int ready (int fd);
 
+/**
+* @brief function that will run forever checking the sensor fsm and observer
+*/
 void *
 total_sensor_control (void* ignore)
 {
@@ -52,6 +61,9 @@ total_sensor_control (void* ignore)
   }
 }
 
+/**
+* @brief starts every thread needed.
+*/
 int
 main (void)
 {
@@ -62,6 +74,10 @@ main (void)
   return 0;
 }
 
+/**
+* @brief initialization of the sockets needed (as server for sensor control, as client for GW)
+* @return socket descriptors will be saved in the iris structure
+*/
 int
 socket_init (){
   int socket_desc , new_socket , c;
@@ -94,6 +110,9 @@ socket_init (){
 
 }
 
+/**
+* @brief reads from the sensor socket and calls interrupton functions
+*/
 int
 observer() {
   pthread_mutex_lock(&mutex_socket);
@@ -124,6 +143,11 @@ observer() {
 
 }
 
+/**
+* @brief checks if something is happening in the socket descriptor so read or accept wont block
+* @param file descriptor (socket descriptor is a file descriptor)
+* @return >0 if file descriptor wont block
+*/
 int ready (int fd){
   struct timeval timeout = {1,0};
   fd_set rdset;

@@ -1,21 +1,23 @@
-/*
+/** File name   :sensor_ack.c
+  * Description :fsm that acks whenever sensor has to
+  */
 
-*/
-
+// Includes
 #include "sensor.h"
 
+// Private variables
 static pthread_mutex_t mutex;
 static TipoFlags jarvan;
 static TipoFlags jarvan_sensor;
 static TipoSensor sgp30;
 
+// FSM states
 enum states {
 	IDLE, // initial state
 	ACK
 };
 
-// Int
-
+// Flag checking functions
 static int
 check_start (fsm_t* this)
 {
@@ -66,15 +68,17 @@ check_timeout (fsm_t* this)
 	return result;
 }
 
-// Void
+// Function for the FSM
 
+/**
+* @brief Begins watching for new messages
+*/
 static void
 begin (fsm_t* this)
 {
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), TIMEOUT_TIME);
 	printf("Begin\n");
 	fflush(stdout);
 
@@ -84,6 +88,9 @@ begin (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Send ack
+*/
 static void
 send_ACK (fsm_t* this)
 {
@@ -98,14 +105,14 @@ send_ACK (fsm_t* this)
 	write(p_sgp30->socket_desc,&message,20);
 	pthread_mutex_unlock(&mutex_socket);
 
-	//tmr_startms((p_sgp30->tmr_timeout), TIMEOUT_TIME);
-
 	pthread_mutex_lock (&mutex);
 	jarvan.bits_received = 0;
 	pthread_mutex_unlock (&mutex);
-
 }
 
+/**
+* @brief Do not count as a message if its an ack, xck or start cond
+*/
 static void
 do_not_count (fsm_t* this)
 {
@@ -115,8 +122,6 @@ do_not_count (fsm_t* this)
 	printf("Do not count\n");
 	fflush(stdout);
 
-	//tmr_startms((p_sgp30->tmr_timeout), TIMEOUT_TIME);
-
 	pthread_mutex_lock (&mutex);
 	jarvan.ack = 0;
 	jarvan.xck = 0;
@@ -124,6 +129,9 @@ do_not_count (fsm_t* this)
 	pthread_mutex_unlock (&mutex);
 }
 
+/**
+* @brief Stop watching for new messages
+*/
 static void
 halt (fsm_t* this)
 {
@@ -133,14 +141,14 @@ halt (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 1000*TIMEOUT_TIME); // Puede volver a encenderse otra vez?
-
 	pthread_mutex_lock (&mutex);
 	jarvan.stop_cond = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
-
+/**
+* @brief Begins watching for new messages
+*/
 static void
 send_XCK (fsm_t* this)
 {
@@ -150,26 +158,18 @@ send_XCK (fsm_t* this)
 	printf("Xck enviado\n");
 	fflush(stdout);
 
-	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 1000*TIMEOUT_TIME);
-
 	char message[20] = "XCK";
 	pthread_mutex_lock(&mutex_socket);
 	write(p_sgp30->socket_desc,&message,20);
 	pthread_mutex_unlock(&mutex_socket);
-
-	//tmr_destroy(&(p_sgp30->tmr_timeout)); // Puede volver a encenderse otra vez?
 
 	pthread_mutex_lock (&mutex);
 	jarvan.timeout = 0;
 	pthread_mutex_unlock (&mutex);
 }
 
-
-/*
-Interruption functions
-*/
-
-
+// ISR
+// Interruption functions for the timers and the observer
 static void
 timeout_timer (union sigval value)
 {
@@ -215,16 +215,13 @@ bits_ack_isr() {
 	jarvan.bits_received = 1;
 	pthread_mutex_unlock (&mutex);
 }
-//Init
 
+// Initialization functions
 int
 sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags)
 {
 	jarvan = *flags;
 	sgp30 = *p_sgp30;
-
-	//p_sgp30->tmr_timeout = tmr_new (timeout_timer);
-	//tmr_startms((tmr_t*)(p_sgp30->tmr_timeout), 1000*TIMEOUT_TIME);
 
 	pthread_mutex_init(&mutex, NULL);
 

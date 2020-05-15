@@ -1,9 +1,11 @@
-/*
- */
+/** File name   :sensor.h
+  * Description :header for sensor related files
+  */
 
 #ifndef _SENSOR_H_
 #define _SENSOR_H
 
+// Includes
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -24,7 +26,6 @@
 #include "../tmr.h"
 
 // Variables
-
 #define OWN_ADDRESS "5000"
 #define CLK_MS 1
 #define REALMEASURES_TIME 40000
@@ -34,6 +35,7 @@
 
 static pthread_mutex_t mutex_socket;
 
+// Sensor structure
 typedef struct{
 
 	unsigned int realmeasures : 1; // if 0 -> measures are not real, 400 standard; if 1 -> now you can read
@@ -48,6 +50,7 @@ typedef struct{
 
 }TipoSensor;
 
+// Flags
 typedef struct{
 
 	unsigned int bits_received : 1;
@@ -69,6 +72,7 @@ typedef struct{
 
 }TipoFlags;
 
+// Function used between files
 void
 start_ack_isr();
 void
