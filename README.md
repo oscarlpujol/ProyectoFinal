@@ -14,19 +14,19 @@
 
 ### How I make it work?
 
-1. Open two terminals (one will work as the sensor and the other as the Iris
+1. Open two terminals (one will work as the sensor and the other as the Iris)
 2. Git clone the project
 ```
 $ git clone
 $ cd ProyectoFinal
 ```
-3. Firstly, start the Iris
+3. Firstly, start the Iris in one terminal
 ```
 $ cd Iris
 $ make
 $ ./iris
 ```
-4. Secondly, start the sensor
+4. Secondly, start the sensor in the other terminal
 ```
 cd Sensor
 $ make
