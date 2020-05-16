@@ -502,7 +502,7 @@ msg_checked_success(fsm_t* this)
   strcpy(CRC1, calculate_CRC(p_iris->measures[0],p_iris->measures[1]));
   strcpy(CRC2, calculate_CRC(p_iris->measures[3],p_iris->measures[4]));
 
-  if(!strcmp(CRC1,p_iris->measures[2]) && !strcmp(CRC2,p_iris->measures[5])){
+  if(atoi(CRC1)==atoi(p_iris->measures[2]) && atoi(CRC2)==atoi(p_iris->measures[5])){
     printf("\nMSG checked...correct\n\n");
   	fflush(stdout);
   }else{
@@ -537,13 +537,13 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   strcat(str, p_iris->id);
   strcat(str, " at ");
   strcat(str, getDate());
-  strcat(str, "\nH2 = ");
+  strcat(str, "\nCO2 = ");
   strcat(str,p_iris->measures[0]);
   strcat(str,p_iris->measures[1]);
-  strcat(str, "ppm\nEthanol = ");
+  strcat(str, "ppm\nTVOC = ");
   strcat(str,p_iris->measures[3]);
   strcat(str,p_iris->measures[4]);
-  strcat(str, "ppm\n");
+  strcat(str, "ppb\n");
 
   /*pthread_mutex_lock (&mutex);
   write(p_iris->socket_desc_GW, str, sizeof(str));
