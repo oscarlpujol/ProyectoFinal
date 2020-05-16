@@ -72,8 +72,8 @@ main ()
 */
 int
 socket_init (){
-  int socket_desc , new_socket, socket_desc_GW , new_socket_GW, c;
-	struct sockaddr_in server , client, server_GW , client_GW;
+  int socket_desc , new_socket, socket_desc_GW , c;
+	struct sockaddr_in server , client, server_GW ;
 
 	//Create socket
 	socket_desc = socket(AF_INET , SOCK_STREAM , 0);

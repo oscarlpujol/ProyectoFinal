@@ -479,9 +479,6 @@ received_data_success(fsm_t* this)
 static void
 check_msg(fsm_t* this)
 {
-  TipoIris *p_iris;
-  p_iris = (TipoIris*)(this->user_data);
-
   pthread_mutex_lock (&mutex);
   jarvan.msg_checked = 1;
 	pthread_mutex_unlock (&mutex);
@@ -540,10 +537,10 @@ send_XCK_2sensor_stop_show_results_maq(fsm_t* this)
   strcat(str, "\nCO2 = ");
   strcat(str,p_iris->measures[0]);
   strcat(str,p_iris->measures[1]);
-  strcat(str, "ppm\nTVOC = ");
+  strcat(str, " ppm\nTVOC = ");
   strcat(str,p_iris->measures[3]);
   strcat(str,p_iris->measures[4]);
-  strcat(str, "ppb\n");
+  strcat(str, " ppb\n");
 
   /*pthread_mutex_lock (&mutex);
   write(p_iris->socket_desc_GW, str, sizeof(str));
@@ -589,10 +586,10 @@ send_XCK_2sensor_stop_show_results_mrs(fsm_t* this)
   strcat(str, "\nH2 = ");
   strcat(str,p_iris->measures[0]);
   strcat(str,p_iris->measures[1]);
-  strcat(str, "ppm\nEthanol = ");
+  strcat(str, " ppm\nEthanol = ");
   strcat(str,p_iris->measures[3]);
   strcat(str,p_iris->measures[4]);
-  strcat(str, "ppm\n");
+  strcat(str, " ppm\n");
 
   /*pthread_mutex_lock (&mutex);
   write(p_iris->socket_desc_GW, str, sizeof(str));
