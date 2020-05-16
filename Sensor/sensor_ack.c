@@ -8,7 +8,6 @@
 // Private variables
 static pthread_mutex_t mutex;
 static TipoFlags jarvan;
-static TipoFlags jarvan_sensor;
 static TipoSensor sgp30;
 
 // FSM states
@@ -76,9 +75,6 @@ check_timeout (fsm_t* this)
 static void
 begin (fsm_t* this)
 {
-	TipoSensor *p_sgp30;
-	p_sgp30 = (TipoSensor*)(this->user_data);
-
 	printf("Begin\n");
 	fflush(stdout);
 
@@ -116,9 +112,6 @@ send_ACK (fsm_t* this)
 static void
 do_not_count (fsm_t* this)
 {
-	TipoSensor *p_sgp30;
-	p_sgp30 = (TipoSensor*)(this->user_data);
-
 	printf("Do not count\n");
 	fflush(stdout);
 
@@ -137,9 +130,6 @@ halt (fsm_t* this)
 {
 	printf("Halt\n");
 	fflush(stdout);
-
-	TipoSensor *p_sgp30;
-	p_sgp30 = (TipoSensor*)(this->user_data);
 
 	pthread_mutex_lock (&mutex);
 	jarvan.stop_cond = 0;
@@ -170,17 +160,6 @@ send_XCK (fsm_t* this)
 
 // ISR
 // Interruption functions for the timers and the observer
-static void
-timeout_timer (union sigval value)
-{
-	pthread_mutex_lock (&mutex);
-	jarvan.timeout = 1;
-	timeout_isr();
-	pthread_mutex_unlock (&mutex);
-
-	printf("TIMEOUT\n");
-}
-
 void
 start_ack_isr() {
 	pthread_mutex_lock (&mutex);

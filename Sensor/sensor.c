@@ -42,16 +42,6 @@ check_start_and_bits (fsm_t* this)
 }
 
 static int
-check_bits (fsm_t* this)
-{
-	pthread_mutex_lock (&mutex);
-	int result = 0;
-	result = (jarvan.bits_received);
-	pthread_mutex_unlock (&mutex);
-	return result;
-}
-
-static int
 check_bits_not_proc1 (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
@@ -267,7 +257,7 @@ MAQ_received (fsm_t* this)
 		strcpy(p_sgp30->measures[2], CRC);
 		strcpy(p_sgp30->measures[3], aux1);
 		strcpy(p_sgp30->measures[4], aux1);
-		strcpy(p_sgp30->measures[5], CRC);
+		strcpy(p_sgp30->measures[5], aux1);
 	}
 	else{ //measures are simulated with random numbers
 
@@ -503,9 +493,6 @@ wrong_command(fsm_t* this)
 static void
 correct_command (fsm_t* this)
 {
-	TipoSensor *p_sgp30;
-	p_sgp30 = (TipoSensor*)(this->user_data);
-
 	pthread_mutex_lock (&mutex);
 	jarvan.correct_command = 0;
 	jarvan.MAQ = 0;

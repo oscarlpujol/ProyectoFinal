@@ -80,8 +80,8 @@ main (void)
 */
 int
 socket_init (){
-  int socket_desc , new_socket , c;
-	struct sockaddr_in server , client;
+  int socket_desc;
+	struct sockaddr_in server;
 
 	//Create socket
 	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
