@@ -265,7 +265,7 @@ MAQ_received (fsm_t* this)
 		strcpy(p_sgp30->measures[0], aux0);
 		strcpy(p_sgp30->measures[1], aux1);
 		strcpy(p_sgp30->measures[2], CRC);
-		strcpy(p_sgp30->measures[3], aux0);
+		strcpy(p_sgp30->measures[3], aux1);
 		strcpy(p_sgp30->measures[4], aux1);
 		strcpy(p_sgp30->measures[5], CRC);
 	}
@@ -335,7 +335,7 @@ MRS_received (fsm_t* this)
 		strcpy(p_sgp30->measures[0], aux0);
 		strcpy(p_sgp30->measures[1], aux1);
 		strcpy(p_sgp30->measures[2], CRC);
-		strcpy(p_sgp30->measures[3], aux0);
+		strcpy(p_sgp30->measures[3], aux1);
 		strcpy(p_sgp30->measures[4], aux1);
 		strcpy(p_sgp30->measures[5], CRC);
 	}
