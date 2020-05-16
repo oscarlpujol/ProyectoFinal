@@ -136,7 +136,7 @@ check_ACK_and_MRS_left (fsm_t* this)
 {
 	pthread_mutex_lock (&mutex);
 	int result = 0;
-	result = (jarvan.ack && jarvan.msg_MRS_left);
+	result = (jarvan.ack && jarvan.msg_MRS_left && !jarvan.xck);
 	pthread_mutex_unlock (&mutex);
 	return result;
 }
@@ -206,8 +206,7 @@ IAQ_received (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	//printf("\nSensor has received IAQ order\n\n");
-	printf("\nSensor powered on\n");
+	printf("\nSensor has received IAQ order\n\n");
 	fflush(stdout);
 
 	tmr_startms((tmr_t*)(p_sgp30->tmr_real_measures), REALMEASURES_TIME); //for REALMEASURES_TIME, measures from the sensor are not real (happens everytime sensor is restarted)
@@ -249,7 +248,7 @@ MAQ_received (fsm_t* this)
 	char aux1[20] = "00";
 	char CRC[20]= "4";
 
-	//printf("\nMAQ command has been received\n\n");
+	printf("\n\nMAQ command has been received\n");
 	fflush(stdout);
 
 	if((p_sgp30->realmeasures) == 0){ //as said before during REALMEASURES_TIME measures are set to a fixed value
@@ -319,7 +318,7 @@ MRS_received (fsm_t* this)
 	char aux1[20] = "00";
 	char CRC[20]= "4";
 
-	//printf("\nMRS command has been received\n\n");
+	printf("\n\nMRS command has been received\n");
 	fflush(stdout);
 
 	if((p_sgp30->realmeasures) == 0){
@@ -394,6 +393,7 @@ I2C_address_received (fsm_t* this)
 	pthread_mutex_lock (&mutex);
 	jarvan.ack = 1;
 	jarvan.msg_MAQ_left = 1;
+	jarvan.msg_MRS_left = 1;
 	jarvan.start_cond = 0;
 	jarvan.bits_received = 0;
 	pthread_mutex_unlock (&mutex);
@@ -414,9 +414,15 @@ send_msg_2IRIS (fsm_t* this)
 	p_sgp30->address += 1;
 
 	if(p_sgp30->address == 6){
-		pthread_mutex_lock (&mutex);
-		jarvan.msg_MAQ_left = 0;
-		pthread_mutex_unlock (&mutex);
+		if(this->current_state == MSG_MAQ){
+      pthread_mutex_lock (&mutex);
+      jarvan.msg_MAQ_left = 0;
+    	pthread_mutex_unlock (&mutex);
+    }else if(this->current_state == MSG_MRS){
+      pthread_mutex_lock (&mutex);
+      jarvan.msg_MRS_left = 0;
+    	pthread_mutex_unlock (&mutex);
+    }
 	}
 
 	pthread_mutex_lock (&mutex);
@@ -432,6 +438,9 @@ MAQ_success (fsm_t* this)
 {
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	printf("\nMAQ command success\n");
+	fflush(stdout);
 
 	for (int i = 0; i <= 5; ++i){
     p_sgp30->address -= 1;
@@ -453,6 +462,10 @@ MRS_success (fsm_t* this)
 {
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
+
+	printf("\nMRS command success\n");
+	fflush(stdout);
+
 
 	for (int i = 0; i <= 5; ++i){
     p_sgp30->address -= 1;
@@ -668,12 +681,12 @@ fsm_new_sensor ()
         {  WAIT_8BITS_1, check_I2C_address, IDLE, wrong_I2C_address},
 				{  WAIT_8BITS_1, check_correct_command, WAIT_8BITS_2, correct_command},
         {  WAIT_8BITS_2, check_MAQ, MAQ, MAQ_received},
-        {  WAIT_8BITS_2, check_MRS, MAQ, MRS_received},
+        {  WAIT_8BITS_2, check_MRS, MRS, MRS_received},
         {  MAQ, check_start_and_bits, MSG_MAQ, I2C_address_received},
-				{  MAQ, check_start_and_bits, MSG_MRS, I2C_address_received},
+				{  MRS, check_start_and_bits, MSG_MRS, I2C_address_received},
         {  MSG_MAQ, check_ACK_and_MAQ_left, MSG_MAQ, send_msg_2IRIS},
         {  MSG_MAQ, check_XCK_and_notMAQ_and_stop, IDLE, MAQ_success},
-				{  MSG_MRS, check_ACK_and_MRS_left, MSG_MAQ, send_msg_2IRIS},
+				{  MSG_MRS, check_ACK_and_MRS_left, MSG_MRS, send_msg_2IRIS},
         {  MSG_MRS, check_XCK_and_notMRS_and_stop, IDLE, MRS_success},
         { -1, NULL, -1, NULL },
     };

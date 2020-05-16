@@ -103,7 +103,7 @@ socket_init (){
 		puts("Connect error");
 
 	}else{
-    puts("Connected");
+    puts("Connected\n");
   }
 
   return 0;

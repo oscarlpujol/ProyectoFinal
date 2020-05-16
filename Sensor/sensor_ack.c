@@ -128,7 +128,7 @@ do_not_count (fsm_t* this)
 static void
 halt (fsm_t* this)
 {
-	//printf("Halt\n");
+	//printf("Halt\n\n");
 	fflush(stdout);
 
 	pthread_mutex_lock (&mutex);
