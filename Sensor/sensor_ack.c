@@ -75,7 +75,7 @@ check_timeout (fsm_t* this)
 static void
 begin (fsm_t* this)
 {
-	printf("Begin\n");
+	//printf("Begin\n");
 	fflush(stdout);
 
 	pthread_mutex_lock (&mutex);
@@ -93,7 +93,7 @@ send_ACK (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("Ack enviado\n");
+	//printf("Ack enviado\n");
 	fflush(stdout);
 
 	char message[20] = "ACK";
@@ -112,7 +112,7 @@ send_ACK (fsm_t* this)
 static void
 do_not_count (fsm_t* this)
 {
-	printf("Do not count\n");
+	//printf("Do not count\n");
 	fflush(stdout);
 
 	pthread_mutex_lock (&mutex);
@@ -128,7 +128,7 @@ do_not_count (fsm_t* this)
 static void
 halt (fsm_t* this)
 {
-	printf("Halt\n");
+	//printf("Halt\n");
 	fflush(stdout);
 
 	pthread_mutex_lock (&mutex);
@@ -145,7 +145,7 @@ send_XCK (fsm_t* this)
 	TipoSensor *p_sgp30;
 	p_sgp30 = (TipoSensor*)(this->user_data);
 
-	printf("Xck enviado\n");
+	//printf("Xck enviado\n");
 	fflush(stdout);
 
 	char message[20] = "XCK";
@@ -204,7 +204,7 @@ sensor_ack_init(TipoSensor *p_sgp30, TipoFlags *flags)
 
 	pthread_mutex_init(&mutex, NULL);
 
-	printf("\nSensor ack init complete!\n");
+	//printf("\nSensor ack init complete!\n");
 	fflush(stdout);
 
 	return 0;
