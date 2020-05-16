@@ -242,7 +242,7 @@ iaq_start(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  //printf("\nSending IAQ command\n\n");
+  printf("\nSending IAQ command\n\n");
 	fflush(stdout);
 
   p_iris->address = &(iaq_message[0][0]);
@@ -272,7 +272,7 @@ iaq_success(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  //printf("\nIAQ success\n\n");
+  printf("\nIAQ success\n\n");
 	fflush(stdout);
 
   pthread_mutex_lock (&mutex);
@@ -301,7 +301,7 @@ maq_start(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  //printf("\nSending MAQ command\n\n");
+  printf("\nSending MAQ command\n\n");
 	fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
@@ -334,7 +334,7 @@ mrs_start(fsm_t* this)
   TipoIris *p_iris;
   p_iris = (TipoIris*)(this->user_data);
 
-  //printf("\nSending MRS command\n\n");
+  printf("\nSending MRS command\n\n");
 	fflush(stdout);
 
   tmr_startms((tmr_t*)(p_iris->tmr_MAQ), TIME_MAQ);
@@ -500,10 +500,10 @@ msg_checked_success(fsm_t* this)
   strcpy(CRC2, calculate_CRC(p_iris->measures[3],p_iris->measures[4]));
 
   if(atoi(CRC1)==atoi(p_iris->measures[2]) && atoi(CRC2)==atoi(p_iris->measures[5])){
-    //printf("\nMSG checked...correct\n\n");
+    printf("\nMSG checked...correct\n\n");
   	fflush(stdout);
   }else{
-    //printf("\nMSG checked...incorrect\n\n");
+    printf("\nMSG checked...incorrect\n\n");
   	fflush(stdout);
   }
 }
@@ -593,9 +593,9 @@ send_XCK_2sensor_stop_show_results_mrs(fsm_t* this)
   write(p_iris->socket_desc_GW, str, sizeof(str));
   pthread_mutex_unlock (&mutex);*/
 
-  //printf("******Message that would be sent to GW*******\n");
-  //printf("%s",str);
-  //printf("*********************************************\n");
+  printf("******Message that would be sent to GW*******\n");
+  printf("%s",str);
+  printf("*********************************************\n");
 
   pthread_mutex_lock (&mutex);
   jarvan.all_msg_received = 0;
@@ -637,6 +637,7 @@ button_onoff_isr(void) {
 void
 button_MAQnow_isr() {
   pthread_mutex_lock (&mutex);
+  //printf("MAQ forced\n");
   jarvan.MAQ_now = 1;
   pthread_mutex_unlock (&mutex);
 }
@@ -644,6 +645,7 @@ button_MAQnow_isr() {
 void
 button_MRSnow_isr() {
   pthread_mutex_lock (&mutex);
+  //printf("MRS forced\n");
   jarvan.MRS_now = 1;
   pthread_mutex_unlock (&mutex);
 }
