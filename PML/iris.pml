@@ -1,95 +1,95 @@
 /*
-ltl spec SLEEP {
+ltl SLEEP {
 [] (((state == 0) && button_on) -> <> (state == 1))
 }
 //CHECKED
 
-ltl spec IDLE_1 {
+ltl IDLE_1 {
 [] (((state == 1) && time_on && (((!button_off) && (!initialized_and_maq_now) && (!initialized_and_mrs_now)) U (state != 1))) -> <> (state == 2))
 }
 //CHECKED
 
-ltl spec IDLE_2 {
+ltl IDLE_2 {
 [] (((state == 1) && button_off && (((!time_on) && (!initialized_and_maq_now) && (!initialized_and_mrs_now)) U (state != 1))) -> <> (state == 0))
 }
 //CHECKED
 
-ltl spec IDLE_3 {
+ltl IDLE_3 {
 [] (((state == 1) && initialized_and_maq_now && (((!time_on) && (!button_off) && (!initialized_and_mrs_now)) U (state != 1))) -> <> (state == 3))
 }
 CHECKED
 
-ltl spec IDLE_4 {
+ltl IDLE_4 {
 [] (((state == 1) && initialized_and_mrs_now && (((!time_on) && (!button_off) && (!initialized_and_maq_now)) U (state != 1))) -> <> (state == 6))
 }
 //CHECKED
 
-ltl spec msg_IAQ_1 {
+ltl msg_IAQ_1 {
 [] (((state == 2) && flag_ACK_and_msg_IAQ_left) -> <> (state == 2))
 }
 //CHECKED
 
-ltl spec msg_IAQ_2 {
+ltl msg_IAQ_2 {
 [] (((state == 2) && flag_ACK_and_msg_IAQ && ((!flag_ACK_and_msg_IAQ_left) U (state != 2))) -> <> (state == 1))
 }
 //CHECKED
 
-ltl spec msg_MAQ_1 {
+ltl msg_MAQ_1 {
 [] (((state == 3) && flag_ACK_and_msg_MAQ_left) -> <> (state == 3))
 }
 //CHECKED
 
-ltl spec msg_MAQ_2 {
+ltl msg_MAQ_2 {
 [] (((state == 3) && flag_ACK_and_msg_MAQ && ((!flag_ACK_and_msg_MAQ_left) U (state != 3))) -> <> (state == 4))
 }
 //CHECKED
 
-ltl spec listen_MAQ_1 {
+ltl listen_MAQ_1 {
 [] (((state == 4) && bits_received_not_all_msg) -> <> (state == 4))
 }
 //CHECKED
 
-ltl spec listen_MAQ_2 {
+ltl listen_MAQ_2 {
 [] (((state == 4) && all_msg && (((!all_received_and_checked) && (!bits_received_not_all_msg)) U (state != 4))) -> <> (state == 5))
 }
 //CHECKED
 
-ltl spec listen_MAQ_3 {
+ltl listen_MAQ_3 {
 [] (((state == 4) && all_received_and_checked && (((!all_msg) && (!bits_received_not_all_msg)) U (state != 4))) -> <> (state == 1))
 }
 //CHECKED
 
-ltl spec Check_CRC_MAQ {
+ltl Check_CRC_MAQ {
 [] (((state == 5) && msg_checked) -> <> (state == 4))
 }
 //CHECKED
 
-ltl spec msg_MRS_1 {
+ltl msg_MRS_1 {
 [] (((state == 6) && flag_ACK_and_msg_MRS_left) -> <> (state == 6))
 }
 //CHECKED
 
-ltl spec msg_MRS_2 {
+ltl msg_MRS_2 {
 [] (((state == 6) && flag_ACK_and_msg_MRS && ((!flag_ACK_and_msg_MRS_left) U (state != 6))) -> <> (state == 7))
 }
 //CHECKED
 
-ltl spec listen_MRS_1 {
+ltl listen_MRS_1 {
 [] (((state == 7) && bits_received_not_all_msg) -> <> (state == 7))
 }
 //CHECKED
 
-ltl spec listen_MRS_2 {
+ltl listen_MRS_2 {
 [] (((state == 7) && all_msg && (((!all_received_and_checked) && (!bits_received_not_all_msg)) U (state != 7))) -> <> (state == 8))
 }
 //CHECKED
 
-ltl spec listen_MRS_3 {
+ltl listen_MRS_3 {
 [] (((state == 7) && all_received_and_checked && (((!all_msg) && (!bits_received_not_all_msg)) U (state != 7))) -> <> (state == 1))
 }
 //CHECKED
 
-ltl spec Check_CRC_MRS {
+ltl Check_CRC_MRS {
 [] (((state == 8) && msg_checked) -> <> (state == 7))
 }
 //CHECKED
