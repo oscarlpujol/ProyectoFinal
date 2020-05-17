@@ -6,11 +6,11 @@ ltl ACK_1  {
 	[] (((state == 1) && starts && (((!received) && (!ack_or_xck)) U (state != 1))) -> <> (state == 0))
 }
 
-ltl spec {
+ltl ACK_2 {
 	[] (((state == 1) && received && (((!ack_or_xck) && (!starts)) U (state != 1))) -> <> (state == 1))
 }
 
-ltl spec {
+ltl ACK_3 {
 	[] (((state == 1) && ack_or_xck && (((!received) && (!starts)) U (state != 1))) -> <> (state == 1))
 }
 
