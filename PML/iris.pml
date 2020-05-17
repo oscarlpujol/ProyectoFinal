@@ -113,7 +113,7 @@ bit flag_ACK_and_msg_MRS_left;
 bit flag_ACK_and_msg_MRS;
 
 
-active proctype sensor_fsm () {
+active proctype iris_fsm () {
     state = 0;
     do
     :: (state == 0) -> atomic {
