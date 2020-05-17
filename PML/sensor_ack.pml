@@ -29,9 +29,9 @@ active proctype sensor_fsm () {
 	}
 	:: (state == 1) -> atomic {
 		if
-		:: (starts && (!ack_or_xck) && (!times) && (!received)) -> state = 0; starts = 0
-		:: (received && (!ack_or_xck) && (!times) && (!starts)) -> state = 1; received = 0
-		:: (ack_or_xck && (!times) && (!received) && (!starts)) -> state = 1; ack_or_xck = 0
+		:: (starts && (!ack_or_xck) && (!received)) -> state = 0; starts = 0
+		:: (received && (!ack_or_xck) && (!starts)) -> state = 1; received = 0
+		:: (ack_or_xck  && (!received) && (!starts)) -> state = 1; ack_or_xck = 0
 		fi
 	}
 	od
@@ -42,7 +42,6 @@ active proctype entorno() {
 	:: if
 		:: starts = 1
 		:: ack_or_xck = 1
-		:: times = 1
 		:: received = 1
 		fi;
 		printf("E: %d, S: %d, F: %d, R: %d \n", state, starts, ack_or_xck, received)

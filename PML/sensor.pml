@@ -1,79 +1,77 @@
-/*
-ltl spec IDLE {
+ltl IDLE {
 [] (((state == 0) && starts) -> <> (state == 1))
 }
 // CHECKED
 
-ltl spec w8_1_1 {
+ltl w8_1_1 {
 [] (((state == 1) && correct && (((!wrong) && (!received)) U (state != 1))) -> <> (state == 2))
 }
 //CHECKED
 
-ltl spec w8_1_2 {
+ltl w8_1_2 {
 [] (((state == 1) && wrong && (((!correct) && (!received)) U (state != 1))) -> <> (state == 0))
 }
 //CHECKED
 
-ltl spec w8_1_3 {
+ltl w8_1_3 {
 [] (((state == 1) && received) -> <> (state == 1))
 }
 // CHECKED
 
-ltl spec w8_2_1 {
+ltl w8_2_1 {
 [] (((state == 2) && maq && (((!received) && (!mrs) && (!IAQ) && (!incorrect)) U (state != 2))) -> <> (state == 3))
 }
 //CHECKED
 
-ltl spec w8_2_2 {
+ltl w8_2_2 {
 [] (((state == 2) && mrs && (((!received) && (!maq) && (!IAQ) && (!incorrect)) U (state != 2))) -> <> (state == 5))
 }
 //CHECKED
 
-ltl spec w8_2_3 {
+ltl w8_2_3 {
 [] (((state == 2) && received) -> <> (state == 2))
 }
 //CHECKED
 
-ltl spec w8_2_4 {
+ltl w8_2_4 {
 [] (((state == 2) && IAQ && (((!received) && (!mrs) && (!maq) && (!incorrect)) U (state != 2))) -> <> (state == 0))
 }
 //CHECKED
 
-ltl spec w8_2_5 {
+ltl w8_2_5 {
 [] (((state == 2) && incorrect && (((!received) && (!mrs) && (!IAQ) && (!maq)) U (state != 2))) -> <> (state == 0))
 }
 //CHECKED
 
-ltl spec state_MAQ {
+ltl state_MAQ {
 [] (((state == 3) && starts) -> <> (state == 4))
 }
 //CHECKED
 
-ltl spec state_MSG_MAQ_1 {
+ltl state_MSG_MAQ_1 {
 [] (((state == 4) && maq_left  && (((!flagXCK)) U (state != 4))) -> <> (state == 0))
 }
 //CHECKED
 
-ltl spec state_MSG_MAQ_2 {
+ltl state_MSG_MAQ_2 {
 [] (((state == 4) && flagXCK) -> <> (state == 4))
 }
 //CHECKED
 
-ltl spec state_MRS {
+ltl state_MRS {
 [] (((state == 5) && starts) -> <> (state == 6))
 }
 //CHECKED
 
-ltl spec state_MSG_MRS_1 {
+ltl state_MSG_MRS_1 {
 [] (((state == 6) && mrs_left  && (((!flagXCK)) U (state != 6))) -> <> (state == 0))
 }
 //CHECKED
 
-ltl spec state_MSG_MRS_2 {
+ltl state_MSG_MRS_2 {
 [] (((state == 6) && flagXCK) -> <> (state == 6))
 }
 //CHECKED
-*/
 
 byte state;
 bit starts;

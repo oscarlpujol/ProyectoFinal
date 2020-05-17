@@ -1,4 +1,3 @@
-/*
 ltl SLEEP {
 [] (((state == 0) && button_on) -> <> (state == 1))
 }
@@ -17,7 +16,7 @@ ltl IDLE_2 {
 ltl IDLE_3 {
 [] (((state == 1) && initialized_and_maq_now && (((!time_on) && (!button_off) && (!initialized_and_mrs_now)) U (state != 1))) -> <> (state == 3))
 }
-CHECKED
+//CHECKED
 
 ltl IDLE_4 {
 [] (((state == 1) && initialized_and_mrs_now && (((!time_on) && (!button_off) && (!initialized_and_maq_now)) U (state != 1))) -> <> (state == 6))
@@ -93,7 +92,7 @@ ltl Check_CRC_MRS {
 [] (((state == 8) && msg_checked) -> <> (state == 7))
 }
 //CHECKED
-*/
+
 
 byte state;
 bit button_on;
